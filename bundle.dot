@@ -1,70 +1,78 @@
-// Wayfinder is a small Amplifier bundle that gives an assistant a warm, guide-like
-// voice: it learns how to speak, how to offer help without pushing, and what kinds of
-// help it can offer.
+// Wayfinder is an Amplifier bundle that acts as a friendly in-session guide — it surfaces what's new, offers relevant next steps in its own voice, and remembers when you've said no.
 
 digraph wayfinder {
     rankdir=LR
     fontname="Helvetica"
     fontsize=12
-    label="Wayfinder — A Friendly Guide Personality\nGives an assistant a warm voice, a polite way to offer help, and a menu of things it can do"
+    label="Wayfinder v0.1.0\nAn in-session guide that surfaces what's new and offers next steps"
     labelloc=t
     labeljust=c
     nodesep=0.6
     ranksep=0.7
     bgcolor="white"
-    source_hash="0c4c2518197ed2deb0f77ac6cd893955b8b85820c9a260c8f6af3b30ecfc6f82"
+    source_hash="c309f906b099b59cd1c3ea75b145cdd5a631e9830b00f84195f39d8a895bdc87"
 
     node [fontname="Helvetica", fontsize=11, style="filled,rounded"]
     edge [fontname="Helvetica", fontsize=9]
 
-    root_wayfinder [label="Wayfinder — Main Package v0.1.0\nThe starting point that pulls everything together\n0 tools · 0 agents\n~334 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
+    root_wayfinder [label="Wayfinder — the guide itself v0.1.0\nStarting point that pulls everything together\n0 tools · 0 agents · ~334 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
 
     subgraph cluster_behaviors {
-        label="Reusable Capability Pack — the guide personality, ready to add to any assistant"
+        label="What Wayfinder Does (capability bundles)"
         style="filled"
         fillcolor="#f9f9f9"
         color="#999999"
 
-        beh_wayfinder_behavior [label="Guide Personality Pack\nBundles the three guidance documents together\n3 ctx\n~1461 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
+        beh_wayfinder_behavior [label="Guide Behavior\nWires up the voice, the offers, and the reminders\n1 tools · 3 ctx · ~1560 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
+    }
+
+    subgraph cluster_modules {
+        label="Working Parts (code that runs automatically)"
+        style="filled"
+        fillcolor="#f9f9f9"
+        color="#999999"
+
+        mod_hooks_wayfinder [label="Session Watcher (hooks-wayfinder)\nGreets you with news, hides offers you declined", shape=box, fillcolor="#bbdefb", style="filled,rounded"]
     }
 
     subgraph cluster_context {
-        label="Written Guidance — plain documents the assistant reads before it speaks"
+        label="Written Guidance (notes the assistant reads)"
         style="filled"
         fillcolor="#f9f9f9"
         color="#999999"
 
-        ctx_wayfinder_voice_md [label="How to Speak — Tone & Personality\nwayfinder-voice.md\n~504 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
-        ctx_propose_and_ack_md [label="How to Offer Help — Suggest, Then Wait\npropose-and-ack.md\n~376 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
-        ctx_offer_catalog_md [label="What Help Is Available — Menu of Offers\noffer-catalog.md\n~412 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_wayfinder_voice_md [label="How Wayfinder Speaks\n(wayfinder-voice.md)\n~539 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_propose_and_ack_md [label="Ask First, Act After You Agree\n(propose-and-ack.md)\n~376 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_offer_catalog_md [label="List of Things It Can Offer\n(offer-catalog.md)\n~229 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
     }
 
     subgraph cluster_legend {
-        label="Legend — what the shapes and colors mean"
+        label="Legend — what each color means"
         style="filled"
         fillcolor="white"
         color="#cccccc"
         fontsize=9
 
-        leg_root [label="main package", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", fontsize=9]
-        leg_behavior [label="capability pack", shape=box, fillcolor="#e0f2f1", style="filled,rounded", fontsize=9]
-        leg_agent [label="specialist helper", shape=box, fillcolor="#c8e6c9", style="filled,rounded", fontsize=9]
-        leg_module [label="code component", shape=box, fillcolor="#bbdefb", style="filled,rounded", fontsize=9]
-        leg_provider [label="AI service", shape=box, fillcolor="#e0e0e0", style="filled,rounded", fontsize=9]
+        leg_root [label="the starting point", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", fontsize=9]
+        leg_behavior [label="a capability bundle", shape=box, fillcolor="#e0f2f1", style="filled,rounded", fontsize=9]
+        leg_agent [label="a helper assistant", shape=box, fillcolor="#c8e6c9", style="filled,rounded", fontsize=9]
+        leg_module [label="code that runs", shape=box, fillcolor="#bbdefb", style="filled,rounded", fontsize=9]
+        leg_provider [label="an AI service", shape=box, fillcolor="#e0e0e0", style="filled,rounded", fontsize=9]
         leg_context [label="written guidance", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
-        leg_standalone [label="ready to run", shape=box, fillcolor="#80cbc4", style="filled,rounded", fontsize=9]
-        leg_experiment [label="experiment", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
-        leg_ext_cost [label="borrowed, adds reading cost", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2, fontsize=9]
-        leg_ext_muted [label="borrowed, no reading cost", shape=box, fillcolor="#f5f5f5", style="dashed", fontsize=9]
+        leg_standalone [label="ready to use on its own", shape=box, fillcolor="#80cbc4", style="filled,rounded", fontsize=9]
+        leg_experiment [label="experimental", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
+        leg_ext_cost [label="borrowed, adds cost", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2, fontsize=9]
+        leg_ext_muted [label="borrowed, no cost", shape=box, fillcolor="#f5f5f5", style="dashed", fontsize=9]
     }
 
-    disclaimer [label="\"Tokens\" measure how much reading the AI must do (~4 characters = 1 token)\nSolid border = part of this project (measured here)\nDashed + red = borrowed from elsewhere, adds hidden reading cost (not measured here)\nDashed + muted = borrowed from elsewhere, no reading cost\nNot counted: work done by helper sessions, or anything decided while running", shape=note, fillcolor="#eceff1", style="filled", fontsize=9]
+    disclaimer [label="\"tok\" = tokens, roughly 4 characters each — a rough measure of how much\nreading the assistant does up front (~4 chars/token)\nSolid border = part of this repo (counted)\nDashed + red = borrowed from elsewhere, hidden cost (not counted)\nDashed + muted = borrowed from elsewhere, no cost\nExcludes: helper-assistant costs, anything loaded on the fly", shape=note, fillcolor="#eceff1", style="filled", fontsize=9]
 
-    ext_githttps___github_com_microsoft_amplifier_foundation_main [label="Amplifier Foundation — Shared Base Kit\nBorrowed from another project; brings its own reading cost", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2]
+    ext_githttps___github_com_microsoft_amplifier_foundation_main [label="Amplifier Foundation\nShared groundwork borrowed from the main project\n(external, cost)", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2]
 
-    root_wayfinder -> ext_githttps___github_com_microsoft_amplifier_foundation_main [style=dashed]
-    root_wayfinder -> beh_wayfinder_behavior [label="builds on"]
-    beh_wayfinder_behavior -> ctx_wayfinder_voice_md [style=dotted, color=purple]
-    beh_wayfinder_behavior -> ctx_propose_and_ack_md [style=dotted, color=purple]
-    beh_wayfinder_behavior -> ctx_offer_catalog_md [style=dotted, color=purple]
+    root_wayfinder -> ext_githttps___github_com_microsoft_amplifier_foundation_main [style=dashed, label="builds on"]
+    root_wayfinder -> beh_wayfinder_behavior [label="turns on"]
+    beh_wayfinder_behavior -> mod_hooks_wayfinder [label="runs", penwidth=0.8]
+    beh_wayfinder_behavior -> ctx_wayfinder_voice_md [style=dotted, color=purple, label="reads"]
+    beh_wayfinder_behavior -> ctx_propose_and_ack_md [style=dotted, color=purple, label="reads"]
+    beh_wayfinder_behavior -> ctx_offer_catalog_md [style=dotted, color=purple, label="reads"]
 }

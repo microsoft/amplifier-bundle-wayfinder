@@ -18,7 +18,10 @@ context:
 # Ring 1: wayfinder's first Python. Deterministic, ephemeral, config-tunable.
 hooks:
   - module: hooks-wayfinder
-    source: ./modules/hooks-wayfinder
+    # Resolved relative to THIS behavior file (behaviors/), so the repo-root
+    # modules/ dir is one level up. `./modules/...` breaks the --app install
+    # (#subdirectory=behaviors/wayfinder.yaml makes behaviors/ the base dir).
+    source: ../modules/hooks-wayfinder
     config:
       enabled: true
       # content_dir: auto-detected as <bundle>/content when unset.
