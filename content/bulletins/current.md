@@ -1,24 +1,26 @@
 # Current bulletin — provider pinning
 
-*One session, many engines. Pin the one you want; let roles handle the rest.*
+**Pin this conversation to a specific engine by handle; unpin to go back to routing.**
 
-## What it is
+## Try it now (interactive session)
 
-Your `~/.amplifier/settings.yaml` defines **named providers you pin to by handle** — 11 right now: `opus-4.8`, `opus`, `sonnet`, `openai`, `gemini`, `ghcp`, `qwen-3.6`, `azure-openai`, `ornith`, `haiku`, `fable`. Each is a real engine with its own model and priority. You switch the active one mid-session by its handle (the app-CLI's `/provider` command — for exact syntax, ask `app-cli:cli-expert`).
-
-Underneath sits the **routing matrix**. Agents request an abstract *role* — `general`, `fast`, `coding`, `reasoning`, and 9 more (13 total) — and the active matrix (`routing.matrix: anthropic`) maps each role to a concrete model with glob patterns: `reasoning → claude-opus-*`, `fast → claude-haiku-*`, `coding → claude-sonnet-*`.
+1. `/provider` — list your handles (11 configured: `opus`, `haiku`, `fable`, local boxes, more); ★ marks the default
+2. `/provider use haiku` — pin THIS conversation to a cheap engine for a bulk stretch
+3. `/provider auto` — unpin; back to default routing
 
 ## Why it matters
 
-**One rule ties the two layers together: a defined model role wins; a pinned provider is the fallback.** Roles keep the common case hands-off — the matrix auto-picks per task — while a pin is your deliberate override when you want a specific engine for cost, capability, or availability.
+Pins are scoped: they steer only your top-level conversation. Sub-agents, model-role routing, and `/goal` keep using the configured routing matrix — delegated work stays on the right engines while you steer the chat. Pins are per-session and never touch `settings.yaml`.
 
-Two things worth knowing:
+## Gotchas
 
-- **Local models are first-class pins**, right alongside the frontier ones — `ornith` (a LAN box) and `qwen-3.6` (a local gguf) sit in the same list.
-- **Pins degrade instead of failing** — the anthropic pins carry fallback-on-overload with sonnet/haiku fallbacks and retry, so an overloaded pin steps down rather than erroring out.
+- `use` takes the handle **id** from `settings.yaml` (e.g. `haiku`), not a model name.
+- Switching vendors mid-conversation is refused — start fresh instead: `amplifier run -p <name>`.
+- Unpin is `auto` (not clear/off). The anthropic pins degrade under overload (sonnet/haiku fallback + retry) instead of erroring.
 
-## One thing to try
+## More
 
-Look up. Every session already prints its active routing matrix and roles — the live map your delegations use right now. Then pin a cheaper engine for a bulk stretch and pin back.
+- From the shell: `amplifier provider list` (handles), `amplifier provider test` (key check), `amplifier run -p <name>` (new session on a handle).
+- Deeper `/provider` questions → offer to pull in `app-cli:cli-expert`.
 
-*Scope: user-initiated pinning; model-initiated pinning was intentionally deferred. No verified per-engine usage breakdown here — this describes the setup, not how often each pin is used.*
+*Commands verified against the installed CLI's PROVIDER_PINNING.md (2026-08-18). Model-initiated pinning was intentionally deferred — user-initiated only.*
