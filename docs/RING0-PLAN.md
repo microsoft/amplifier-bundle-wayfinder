@@ -137,4 +137,19 @@ Plumbing before polish. Each step ends at a checkable gate.
 3. **Ten-lane-highway source:** drafted from corpus + CI mining of session history (esp. cortex-core workspace) → `../../mining/goal-workflow-evolution.md`. Note: the literal phrase appears nowhere in sessions — the *practice* ("keep 10+ lanes full") is real and heavily documented; the name is ours to author.
 4. **Ring 0 offer set:** provider **pinning** (bulletin), **goal-batch**, **goalify**, **ten-lane-highway** (concept). More candidates when Brian pastes recent announcements.
 5. **Decline-memory home:** `~/.amplifier/wayfinder/` confirmed-by-precedent — the `~/.amplifier/<component>/` + `AMPLIFIER_<COMPONENT>_DIR` env-override pattern is established (skills: `AMPLIFIER_SKILLS_DIR`; context-intelligence: `AMPLIFIER_CONTEXT_INTELLIGENCE_BASE_PATH` → `~/.amplifier/projects`; team-pulse: `AMPLIFIER_TEAM_PULSE_DIR` → `~/.amplifier/team-pulse/`). `~/.amplifier` is ecosystem-shared, not app-cli-owned. wayfinder uses `AMPLIFIER_WAYFINDER_DIR`, default `~/.amplifier/wayfinder/`.
+
+---
+
+## 7. Design notes — announcements drop (Brian, 2026-08-18)
+
+Brian supplied 11 recent announcements (raw: `../../mining/announcements-2026-08.md`). Directives extracted — these bind the build:
+
+1. **Advertisement level:** NEVER inject full announcement bodies into users' sessions. Always-on = the tiny offer-catalog index + ONE short current bulletin. Full detail lives in on-demand files (soft-referenced) or pointers to source repos/docs. Raw announcements stay in mining/, never in the bundle.
+2. **Observe-vs-on-path is an open design axis:** Ring 0 = on-path prose triggers (the agent notices from conversation). Session-observing "jump in" behavior (hooks watching the user's actual activity) = the Ring 1 `hooks-wayfinder` exploration. How aggressive the jump-in should be is deliberately undecided.
+3. **Drift rule:** announcements go stale in days. Before authoring a packet from one, verify current reality (repo exists, command shape current, skill present). Wayfinder content = CI-mined from *current* practice, not copied from old announcements.
+4. **Install guidance:** offers may reference bundles/tools the user lacks. Ring 0: the offer shows the exact `amplifier bundle add … --app` (or `uv tool install …`) command, gated by ack. **PARKED (collab project, Ring 1+):** a hot-load feature in amplifier-app-cli letting wayfinder download/install behaviors on demand.
+5. **Separation of concerns:** wayfinder never absorbs another domain's expertise — it points. App-CLI questions route to `app-cli:cli-expert` (collab: app-cli bundle changes stay in that repo). Skills load by name. Concepts get thin notes, not copies.
+6. **Two content streams, one mechanism:** (a) bundle/feature announcements (this drop); (b) "how we work" practice guidance (session-mined — goal-workflow mining is the first). Both become authored packets in the same channel.
+
+**Backlog packet candidates from this drop** (beyond Ring 0's four): work-tracker, /monitor, /goal, product-council, android-tester, ios-tester, computer-use, simulated-user-research, amplifier-online, opencode+copilot skills.
 ```
