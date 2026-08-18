@@ -169,3 +169,26 @@ Everything past the spine is independently shippable, so Ring 1 can land increme
 3. **Signal aggressiveness (RING0 §7.2 left open).** Ring 1 default = conservative: `prompt_matches` only, one hint per `id` per session, favor false negatives. Right starting posture, or do you want tool-sequence "jump-in" watching sooner?
 4. **Decline-capture determinism.** Ring 1 makes *enforcement* (never re-offer) deterministic but keeps the *write* (recording a new "no") agent-mediated. Acceptable, or do you want the hook to detect declines deterministically now (harder, less reliable)?
 5. **Dig-deeper fetch: zero-Python skill vs shared lib.** Thinnest Ring 1 = the skill drives `git` in its body (no new module). If #1's resolver is built as a small lib, the skill can share it. Prefer zero-new-Python for Ring 1, or build the shared fetch lib now (used by hook + skill)?
+
+---
+
+## Decisions (Brian, 2026-08-18)
+
+- **Q1 — HYBRID, derived-first.** First pass: the catalog is DERIVED from per-item
+  frontmatter (hook-assembled index). Then we **curate/refine before finalizing** —
+  the derived index is a draft surface; human curation finalizes what ships. Both
+  stages stay tunable so we can experiment with where the curation line sits.
+- **Cross-cutting principle: make it tunable/configurable.** Sources, signal sets,
+  derivation behavior, thresholds — config knobs, not baked constants, so we can
+  experiment and learn between rings.
+- **Q5 — either way is fine (Brian).** Adopting the proposal's recommendation:
+  zero-Python skill for Ring 1; extract a shared fetch lib only when the hook's
+  resolver lands and the duplication is real.
+- **Q2–Q4 — defaults adopted under the tunability principle** *(inferred from
+  Brian's direction, not individually confirmed — flag if wrong)*:
+  - Q2: Ring 1 sources = repos/paths we control (trusted), as a configurable list;
+    untrusted-source hardening deferred to Ring 2.
+  - Q3: conservative default (`prompt_matches` only, one hint per id per session);
+    aggressiveness is a config knob to widen during Ring 1 observation.
+  - Q4: deterministic decline *enforcement* now; the decline *write* stays
+    agent-mediated; revisit at Ring 1 review with CI observation data.
