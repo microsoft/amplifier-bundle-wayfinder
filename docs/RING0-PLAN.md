@@ -127,4 +127,14 @@ Plumbing before polish. Each step ends at a checkable gate.
 3. **ten-lane-highway source.** Is there a canonical write-up of the concept, or should I draft the concept note from the corpus references (it rides alongside goal-batch) for you to edit?
 4. **First offer set.** Is goal-batch the single propose-and-ack exemplar you want for Ring 0, or should I seed 2–3 (e.g. also "switch to a mode" or "load skill X") so the catalog shape is exercised more?
 5. **Decline-memory home — confirm.** I'll default decline-memory to `~/.amplifier/wayfinder/declines.md` (per-user, survives this workspace's destruction). Say the word if you'd rather it live in the workspace/project instead.
+
+---
+
+## 6. Answers (Brian, 2026-08-18) — build unblocked
+
+1. **Install shape:** proper bundle repo that passes the `validate-bundle-repo` recipe, with a behavior bundle installable via `--app` per conventions. App-agnostic by construction; **amplifier-app-cli will auto-compose it** (like goal/notify) via a separate app-cli change, later ring. No other app-specific coupling allowed.
+2. **Pinning source:** mined from Context Intelligence (spark-1) — real config + real usage → `../../mining/pinning-research.md`. Standing intent: wayfinder content is regularly refreshed by CI agents mining *actual current practice*, not hand-maintained folklore. (Announcements paste from Brian still pending.)
+3. **Ten-lane-highway source:** drafted from corpus + CI mining of session history (esp. cortex-core workspace) → `../../mining/goal-workflow-evolution.md`. Note: the literal phrase appears nowhere in sessions — the *practice* ("keep 10+ lanes full") is real and heavily documented; the name is ours to author.
+4. **Ring 0 offer set:** provider **pinning** (bulletin), **goal-batch**, **goalify**, **ten-lane-highway** (concept). More candidates when Brian pastes recent announcements.
+5. **Decline-memory home:** `~/.amplifier/wayfinder/` confirmed-by-precedent — the `~/.amplifier/<component>/` + `AMPLIFIER_<COMPONENT>_DIR` env-override pattern is established (skills: `AMPLIFIER_SKILLS_DIR`; context-intelligence: `AMPLIFIER_CONTEXT_INTELLIGENCE_BASE_PATH` → `~/.amplifier/projects`; team-pulse: `AMPLIFIER_TEAM_PULSE_DIR` → `~/.amplifier/team-pulse/`). `~/.amplifier` is ecosystem-shared, not app-cli-owned. wayfinder uses `AMPLIFIER_WAYFINDER_DIR`, default `~/.amplifier/wayfinder/`.
 ```
