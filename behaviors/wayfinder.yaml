@@ -1,0 +1,14 @@
+bundle:
+  name: wayfinder-behavior
+  version: 0.1.0
+  description: Wires wayfinder's always-on channel — voice, propose-and-ack protocol, offer catalog, and current bulletin. No new tools or hooks in Ring 0.
+
+# The three always-on files. Kept small on purpose (~1.1K tokens total, each < 500).
+# Bulletin BODIES are deliberately NOT always-on — the catalog carries the headline
+# and the agent reads content/bulletins/current.md on demand (once per session).
+# Everything wayfinder *can do* comes from foundation's inherited tools.
+context:
+  include:
+    - wayfinder:context/wayfinder-voice.md
+    - wayfinder:context/propose-and-ack.md
+    - wayfinder:context/offer-catalog.md

@@ -90,7 +90,8 @@ Plumbing before polish. Each step ends at a checkable gate.
 
 1. **Scaffold + prove it loads.** Create `wayfinder/bundle.md` (thin standalone) + `behaviors/wayfinder.yaml` (empty `context.include` to start). **Gate:** a session starts with wayfinder composed onto foundation, no load errors.
    ```bash
-   amplifier run --bundle /home/bkrabach/dev/tour-guide/wayfinder/bundle.md "hello — what are you?"
+   amplifier run --bundle "file:///home/bkrabach/dev/tour-guide/wayfinder/bundle.md" "hello — what are you?"
+   # note: this CLI version requires the file:// URI form for local bundle paths
    ```
 2. **Author the standing behavior.** Write `context/wayfinder-voice.md` (the one-voice principle) and `context/propose-and-ack.md` (propose→show→ack→act + the 3 guardrails + decline-memory procedure). Wire both via `context.include`. **Gate:** in a fresh session, wayfinder describes its own job in-voice and states the ack/guardrail rules when asked.
 3. **First real announcement (the show-me proof).** Write `content/bulletins/current.md` — the **pinning** feature, in the authored voice (what it is, why it matters, one thing to try). Wire it via `context.include`; add the instruction "lead with the current bulletin once per session unless it's in declines." **Gate:** Brian starts a session and the pinning announcement surfaces up front, in-voice, not as a changelog dump.

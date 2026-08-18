@@ -1,0 +1,71 @@
+// Wayfinder is an Amplifier bundle that gives an assistant a guide-like voice —
+// it proposes next steps, waits for your go-ahead, and keeps track of where you are.
+
+digraph wayfinder {
+    rankdir=LR
+    fontname="Helvetica"
+    fontsize=12
+    label="Wayfinder v0.1.0\nA guided-assistant personality package: suggests the next step, waits for your OK"
+    labelloc=t
+    labeljust=c
+    nodesep=0.6
+    ranksep=0.7
+    bgcolor="white"
+    source_hash="d82108a7c4a5b9120b248115eab236932b078c8dddd1ceedd5bb70f00c6ce653"
+
+    node [fontname="Helvetica", fontsize=11, style="filled,rounded"]
+    edge [fontname="Helvetica", fontsize=9]
+
+    root_wayfinder [label="Wayfinder — the package itself\nv0.1.0 · 0 tools · 0 agents\n~334 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
+
+    subgraph cluster_behaviors {
+        label="Capability Package (what this repo adds)"
+        style="filled"
+        fillcolor="#f9f9f9"
+        color="#999999"
+
+        beh_wayfinder_behavior [label="Guided-Assistant Behavior\nbundles 4 instruction files\n4 ctx · ~1689 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
+    }
+
+    subgraph cluster_context {
+        label="Instruction Files (the assistant's written guidance)"
+        style="filled"
+        fillcolor="#f9f9f9"
+        color="#999999"
+
+        ctx_wayfinder_voice_md [label="How to speak — tone and manner\nwayfinder-voice.md · ~346 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_propose_and_ack_md [label="Suggest, then wait for approval\npropose-and-ack.md · ~376 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_offer_catalog_md [label="Menu of things it can offer to do\noffer-catalog.md · ~346 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_current_md [label="Where you are right now\ncurrent.md · ~482 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+    }
+
+    subgraph cluster_legend {
+        label="Legend — what each color means"
+        style="filled"
+        fillcolor="white"
+        color="#cccccc"
+        fontsize=9
+
+        leg_root [label="the package itself", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", fontsize=9]
+        leg_behavior [label="capability package", shape=box, fillcolor="#e0f2f1", style="filled,rounded", fontsize=9]
+        leg_agent [label="helper specialist", shape=box, fillcolor="#c8e6c9", style="filled,rounded", fontsize=9]
+        leg_module [label="add-on code", shape=box, fillcolor="#bbdefb", style="filled,rounded", fontsize=9]
+        leg_provider [label="AI service", shape=box, fillcolor="#e0e0e0", style="filled,rounded", fontsize=9]
+        leg_context [label="instruction file", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
+        leg_standalone [label="ready-to-run version", shape=box, fillcolor="#80cbc4", style="filled,rounded", fontsize=9]
+        leg_experiment [label="experiment", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
+        leg_ext_cost [label="borrowed, adds weight", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2, fontsize=9]
+        leg_ext_muted [label="borrowed, no weight", shape=box, fillcolor="#f5f5f5", style="dashed", fontsize=9]
+    }
+
+    disclaimer [label="\"tok\" = rough size of text the AI reads each time (~4 characters per token)\nSolid outline = lives in this repo, size counted here\nDashed + red = borrowed from elsewhere, adds size that isn't counted here\nDashed + grey = borrowed from elsewhere, adds no size\nNot counted: work done by helper sessions, anything decided while running", shape=note, fillcolor="#eceff1", style="filled", fontsize=9]
+
+    ext_githttps___github_com_microsoft_amplifier_foundation_main [label="Amplifier Foundation\nthe shared base everything builds on\n(borrowed, adds weight)", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2]
+
+    root_wayfinder -> ext_githttps___github_com_microsoft_amplifier_foundation_main [style=dashed]
+    root_wayfinder -> beh_wayfinder_behavior [label="composes"]
+    beh_wayfinder_behavior -> ctx_wayfinder_voice_md [style=dotted, color=purple]
+    beh_wayfinder_behavior -> ctx_propose_and_ack_md [style=dotted, color=purple]
+    beh_wayfinder_behavior -> ctx_offer_catalog_md [style=dotted, color=purple]
+    beh_wayfinder_behavior -> ctx_current_md [style=dotted, color=purple]
+}
