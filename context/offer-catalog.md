@@ -5,7 +5,7 @@ The curated index: when you see the **trigger**, make the **offer** via the prop
 ## pinning  *(informational — the current bulletin)*
 - **Trigger:** session start (once per session), or the user wonders which model/provider they're on.
 - **Offer:** the current bulletin — provider pinning: pin a conversation to an engine by handle.
-- **Action:** unless `pinning` is in declines, read `wayfinder:content/bulletins/current.md` and render its **headline + Try-it-now commands** (that's the surfacing), with Why in one line. Offer Gotchas/More on interest — never paste the whole bulletin unprompted.
+- **Action:** unless `pinning` is in declines, `read_file("@wayfinder:content/bulletins/current.md")` and render its **headline + Try-it-now commands** (that's the surfacing), with Why in one line. Offer Gotchas/More on interest — never paste the whole bulletin unprompted.
 
 ## goal-batch
 - **Trigger:** the user has 2+ independent, parallelizable tasks that won't collide.
@@ -20,4 +20,4 @@ The curated index: when you see the **trigger**, make the **offer** via the prop
 ## ten-lane-highway  *(concept)*
 - **Trigger:** the user is curious about scaling parallel lanes.
 - **Offer:** the thin concept note on the ~10-lane steady-state practice.
-- **Action:** on ack, read `wayfinder:content/concepts/ten-lane-highway.md` (soft ref — load on demand).
+- **Action:** on ack, `read_file("@wayfinder:content/concepts/ten-lane-highway.md")` (load on demand).

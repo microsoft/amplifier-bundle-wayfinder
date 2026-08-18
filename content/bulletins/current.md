@@ -21,6 +21,6 @@ Pins are scoped: they steer only your top-level conversation. Sub-agents, model-
 ## More
 
 - From the shell: `amplifier provider list` (handles), `amplifier provider test` (key check), `amplifier run -p <name>` (new session on a handle).
-- Deeper `/provider` questions → offer to pull in `app-cli:cli-expert`.
+- Deeper `/provider` questions → offer to pull in `app-cli:cli-expert` if it's available in this session; otherwise point at the amplifier-app-cli docs (`docs/PROVIDER_PINNING.md`).
 
 *Commands verified against the installed CLI's PROVIDER_PINNING.md (2026-08-18). Model-initiated pinning was intentionally deferred — user-initiated only.*
