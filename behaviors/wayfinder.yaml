@@ -1,14 +1,33 @@
 bundle:
   name: wayfinder-behavior
-  version: 0.1.0
-  description: Wires wayfinder's always-on channel — voice, propose-and-ack protocol, offer catalog, and current bulletin. No new tools or hooks in Ring 0.
+  version: 0.2.0
+  description: Wires wayfinder's channel — voice, propose-and-ack protocol, a thin derived-catalog note, and the hooks-wayfinder hook (session:start bulletin surfacing + frontmatter-derived catalog + deterministic decline-filter + one conservative prompt-signal).
 
-# The three always-on files. Kept small on purpose (~1.1K tokens total, each < 500).
-# Bulletin BODIES are deliberately NOT always-on — the catalog carries the headline
-# and the agent reads content/bulletins/current.md on demand (once per session).
-# Everything wayfinder *can do* comes from foundation's inherited tools.
+# Always-on files. Kept small on purpose (~1.1–1.6K tokens total, each < 500).
+# The FULL offer catalog is no longer always-on: hooks-wayfinder derives it from
+# per-item frontmatter and injects a compact index EPHEMERALLY on the first
+# prompt. offer-catalog.md is now just a thin note explaining that.
+# Bulletin BODIES stay on-demand — the hook surfaces the headline + Try-it-now
+# commands; the agent reads content/bulletins/current.md on demand for the rest.
 context:
   include:
     - wayfinder:context/wayfinder-voice.md
     - wayfinder:context/propose-and-ack.md
     - wayfinder:context/offer-catalog.md
+
+# Ring 1: wayfinder's first Python. Deterministic, ephemeral, config-tunable.
+hooks:
+  - module: hooks-wayfinder
+    source: ./modules/hooks-wayfinder
+    config:
+      enabled: true
+      # content_dir: auto-detected as <bundle>/content when unset.
+      content_dir: null
+      # declines_path: ${AMPLIFIER_WAYFINDER_DIR:-~/.amplifier/wayfinder}/declines.md when unset.
+      declines_path: null
+      # prompt_matches signal layer on/off (the per-item regex lives in frontmatter).
+      signals_enabled: true
+      # derive-vs-curate line. false = derive-first (all items); true = only `curated: true`.
+      curate: false
+      # per-session cap on signal nudges (on top of one-per-offer-per-session).
+      max_hints_per_session: 3

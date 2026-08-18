@@ -1,3 +1,21 @@
+---
+id: pinning
+category: bulletin
+headline: "Pin a conversation to an engine by handle; unpin to go back to routing."
+try_now:
+  - "/provider"
+  - "/provider use haiku"
+  - "/provider auto"
+signals:
+  on_event: session:start
+  prompt_matches:
+    - '\b(/provider|pin(ned|ning)?|which (model|provider|engine))\b'
+trigger: "session start, or the user wonders which model/provider they're on"
+action: 'read_file("@wayfinder:content/bulletins/current.md")'
+verified_at: 2026-08-18
+provenance: "installed CLI docs/PROVIDER_PINNING.md"
+---
+
 # Current bulletin — provider pinning
 
 **Pin this conversation to a specific engine by handle; unpin to go back to routing.**

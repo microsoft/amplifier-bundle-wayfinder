@@ -1,3 +1,17 @@
+---
+id: ten-lane-highway
+category: concept
+headline: "Keep ~10 autonomous /goal lanes full at all times — the steady-state parallel practice."
+try_now:
+  - 'load_skill("goal-batch")'
+signals:
+  prompt_matches:
+    - '\bten[- ]?lane|(scal|widen).{0,20}\blanes?\b'
+trigger: "the user is curious about scaling parallel lanes"
+action: 'read_file("@wayfinder:content/concepts/ten-lane-highway.md")'
+provenance: "coined label; practice mined from cortex sessions (see body)"
+---
+
 # The ten-lane highway
 
 > **On the name:** "ten-lane highway" is *our* coined label. The exact phrase appears nowhere in the actual sessions — but the practice it names is real, heavily used, and documented below. What Brian actually types is *"keep the lanes as close to 10 lanes as possible at all times."*

@@ -1,23 +1,16 @@
-# offer catalog
+# offer catalog (derived)
 
-The curated index: when you see the **trigger**, make the **offer** via the propose→show→ack→act loop, then run the **action** on ack. Add entries as new patterns earn their place.
+The catalog is no longer hand-maintained here. `hooks-wayfinder` **derives** it at
+session start by scanning per-item frontmatter across `content/` (`id`, `category`,
+`headline`, `try_now`, `trigger`, `signals`, `action`), filters out anything in
+the decline file, and injects a compact index — plus the current bulletin in
+packet shape — **ephemerally on your first message**. So the live menu arrives in
+context; it is not always-on here.
 
-## pinning  *(informational — the current bulletin)*
-- **Trigger:** session start (once per session), or the user wonders which model/provider they're on.
-- **Offer:** the current bulletin — provider pinning: pin a conversation to an engine by handle.
-- **Action:** unless `pinning` is in declines, `read_file("@wayfinder:content/bulletins/current.md")` and render its **headline + Try-it-now commands** (that's the surfacing), with Why in one line. Offer Gotchas/More on interest — never paste the whole bulletin unprompted.
+When you see an offer's **trigger**, make the **offer** via propose→show→ack→act,
+then run its **action** on ack. The hook may also drop a single conservative
+"possible fit" nudge for an offer whose `signals.prompt_matches` matched — treat
+it as a hint to propose, never as permission to act.
 
-## goal-batch
-- **Trigger:** the user has 2+ independent, parallelizable tasks that won't collide.
-- **Offer:** run them as parallel autonomous lanes — each its own worktree/branch/tmux `/goal` session, verified and merged for you.
-- **Action:** on ack, `load_skill("goal-batch")`. *(Headless gotcha: a bare `/goal-batch` token does NOT load the skill — name it in prose, e.g. "use the goal-batch skill and run this batch: …".)*
-
-## goalify
-- **Trigger:** the user wants to turn the current task into an autonomous run.
-- **Offer:** author a proper stop-condition/goal so `/goal` can run it to completion.
-- **Action:** on ack, `load_skill("goalify")`.
-
-## ten-lane-highway  *(concept)*
-- **Trigger:** the user is curious about scaling parallel lanes.
-- **Offer:** the thin concept note on the ~10-lane steady-state practice.
-- **Action:** on ack, `read_file("@wayfinder:content/concepts/ten-lane-highway.md")` (load on demand).
+To add or change offers: edit the item's frontmatter under `content/` (or add a
+new `content/<category>/<id>.md`). Do not maintain a parallel list here.
