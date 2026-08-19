@@ -1,6 +1,7 @@
 ---
 id: pinning
 category: bulletin
+promoted: true
 headline: "Switch which model answers you mid-conversation — same vendor, no lost session."
 try_now:
   - "/provider"
@@ -29,6 +30,8 @@ provenance: "concept from amplifier-foundation (PROVIDER_CONTRACT, routing-matri
 ## Why it matters
 
 A pin changes which model/config answers your **top-level conversation** — no restart, no lost history. It's session-only and never touches `settings.yaml`. Sub-agents, model-role routing, and `/goal` are unaffected — they keep using your configuration, so delegated work stays on its own models while you steer the chat.
+
+The real lever showed up under load: a rate-limit storm cleared by pinning a *different* model at unchanged concurrency. Switching which model answers beats serializing your work down to one-request-at-a-time — you keep the throughput and route around the throttled model.
 
 ## Gotchas
 
