@@ -5,11 +5,18 @@ Three deterministic, config-tunable, ephemeral jobs:
 1. ``session:start`` — resolve the content sources, scan per-item frontmatter,
    and assemble the DERIVED offer catalog (replacing the hand-maintained
    ``offer-catalog.md``). Read the decline file and filter it here — decline
-   *enforcement* is deterministic. This handler does the deterministic WORK and
-   caches the result; it injects nothing (so nothing persistent is ever added).
+   *enforcement* is deterministic. Also pick the session's LEAD via promoted-item
+   rotation: the freshest-unseen ``promoted: true`` item (lowest surfaced count,
+   oldest last_shown, then id) from the persistent seen-memory, so multiple
+   promoted items rotate across sessions instead of the same bulletin forever.
+   This handler does the deterministic WORK and caches the result; it injects
+   nothing (so nothing persistent is ever added).
 
 2. ``prompt:submit`` (first prompt of the session) — deliver the catalog index +
-   the current bulletin, in packet shape, as an EPHEMERAL injection.
+   the rotation lead, in packet shape, as an EPHEMERAL injection, and record the
+   surfacing in the seen-memory (the hook's own deterministic bookkeeping). Zero
+   promoted items (or ``promoted_rotation: false``) falls back to surfacing the
+   single ``on_event: session:start`` bulletin, as before.
 
 3. ``prompt:submit`` (later prompts) — one conservative ``prompt_matches`` signal
    per offer, rate-limited and declines-filtered. A single nudge only — the hook
@@ -32,10 +39,12 @@ hook never writes the decline file.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +76,17 @@ class WayfinderConfig:
     # key "default"), then these in declared order; first-id-wins on collision.
     content_sources: dict[str, str] = field(default_factory=dict)
     declines_path: str | None = None  # default: env/HOME wayfinder dir
+    # Seen-memory for promoted-lead rotation. A JSONL of {id, count, last_shown}
+    # records; default <wayfinder dir>/surfaced.jsonl (same env/HOME pattern as
+    # declines_path). Reads tolerate missing/corrupt; the hook writes it as its
+    # own deterministic bookkeeping when it surfaces a promoted lead.
+    surfaced_path: str | None = None
+    # Promoted-lead rotation. When true (default), session:start surfaces the
+    # freshest-unseen promoted item (lowest surfaced count, tie-break oldest
+    # last_shown, then id) as the lead, rotating across fresh sessions. When
+    # false, behave as before: surface the single on_event:session:start
+    # bulletin every session.
+    promoted_rotation: bool = True
     signals_enabled: bool = True
     curate: bool = False  # False = derive-first (all items); True = only curated: true
     max_hints_per_session: int = 3
@@ -102,6 +122,8 @@ class WayfinderConfig:
             content_dir=raw.get("content_dir") or None,
             content_sources=content_sources,
             declines_path=raw.get("declines_path") or None,
+            surfaced_path=raw.get("surfaced_path") or None,
+            promoted_rotation=bool(raw.get("promoted_rotation", True)),
             signals_enabled=bool(raw.get("signals_enabled", True)),
             curate=bool(raw.get("curate", False)),
             max_hints_per_session=int(raw.get("max_hints_per_session", 3)),
@@ -123,6 +145,7 @@ class CatalogItem:
     on_events: list[str] = field(default_factory=list)
     prompt_patterns: list[re.Pattern[str]] = field(default_factory=list)
     curated: bool = False
+    promoted: bool = False
     source_path: str = ""
     # Provenance: the source key this item came from ("default" = own content,
     # else the content_sources map key). Captured now; no consumer yet.
@@ -135,6 +158,9 @@ class SessionCatalog:
     declined_ids: set[str] = field(default_factory=set)
     index_text: str = ""
     start_items: list[CatalogItem] = field(default_factory=list)
+    # The rotation-chosen promoted lead for this session (None → fall back to
+    # start_items). When set, delivery records a surfacing against its id.
+    promoted_lead: CatalogItem | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -208,6 +234,7 @@ def _item_from_meta(
         on_events=_as_str_list(signals.get("on_event")),
         prompt_patterns=_compile_patterns(_as_str_list(signals.get("prompt_matches"))),
         curated=bool(meta.get("curated", False)),
+        promoted=bool(meta.get("promoted", False)),
         source_path=source_path,
         source=source,
     )
@@ -275,6 +302,71 @@ def read_declined_ids(declines_path: Path, known_ids: set[str]) -> set[str]:
 
 
 # --------------------------------------------------------------------------- #
+# Seen-memory (promoted-lead rotation): read/select here, write in the hook
+# --------------------------------------------------------------------------- #
+def read_surfaced(surfaced_path: Path) -> dict[str, dict[str, Any]]:
+    """Read the surfaced-lead JSONL into ``{id: {count, last_shown}}``.
+
+    One JSON record per line; the last record for an id wins (so an appended or
+    rewritten file both read correctly). Missing file / dir → ``{}`` (never
+    created on read). Corrupt lines / malformed records are skipped, never
+    raised — same tolerance discipline as the decline file.
+    """
+    try:
+        text = surfaced_path.read_text(encoding="utf-8")
+    except (FileNotFoundError, NotADirectoryError):
+        return {}
+    except (OSError, UnicodeDecodeError):
+        logger.warning(
+            "%s: could not read surfaced-memory at %s", _SOURCE, surfaced_path
+        )
+        return {}
+    records: dict[str, dict[str, Any]] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except (json.JSONDecodeError, ValueError):
+            continue  # tolerate a corrupt line
+        if not isinstance(rec, dict):
+            continue
+        rid = rec.get("id")
+        if not isinstance(rid, str) or not rid:
+            continue
+        raw_count = rec.get("count", 0)
+        try:
+            count = int(raw_count)
+        except (TypeError, ValueError):
+            count = 0
+        last_shown = rec.get("last_shown", "")
+        if not isinstance(last_shown, str):
+            last_shown = ""
+        records[rid] = {"count": count, "last_shown": last_shown}
+    return records
+
+
+def _select_promoted_lead(
+    pool: list[CatalogItem], seen: dict[str, dict[str, Any]]
+) -> CatalogItem | None:
+    """Freshest-unseen promoted item: lowest count, oldest last_shown, then id.
+
+    An unseen item has count 0 and last_shown "" — so it beats any already-shown
+    item (count ≥ 1), and "" sorts before any ISO timestamp (which sort
+    lexicographically = chronologically). Stable final tie-break by id.
+    """
+    if not pool:
+        return None
+
+    def sort_key(it: CatalogItem) -> tuple[int, str, str]:
+        rec = seen.get(it.id) or {}
+        return (int(rec.get("count", 0)), str(rec.get("last_shown", "")), it.id)
+
+    return min(pool, key=sort_key)
+
+
+# --------------------------------------------------------------------------- #
 # Injection text builders (packet shape; point-don't-absorb)
 # --------------------------------------------------------------------------- #
 def _build_index_block(catalog: SessionCatalog) -> str:
@@ -296,11 +388,16 @@ def _build_index_block(catalog: SessionCatalog) -> str:
         cat = f" [{it.category}]" if it.category else ""
         lines.append(f"- {it.id}{cat}: {it.headline}")
 
-    start = [it for it in catalog.start_items if it.id not in catalog.declined_ids]
+    # Lead: the rotation-chosen promoted item when present (already
+    # decline-filtered), else today's on_event:session:start bulletin(s).
+    if catalog.promoted_lead is not None:
+        start = [catalog.promoted_lead]
+    else:
+        start = [it for it in catalog.start_items if it.id not in catalog.declined_ids]
     if start:
         lines.append("")
         lines.append(
-            "SURFACE NOW — current bulletin (once, commands-first, lead with a "
+            "SURFACE NOW — this session's lead (once, commands-first, lead with a "
             "2–3 line summary; read the file on demand for the rest, never paste "
             "the whole thing):"
         )
@@ -485,6 +582,41 @@ class WayfinderHooks:
         base = os.environ.get("AMPLIFIER_WAYFINDER_DIR") or "~/.amplifier/wayfinder"
         return Path(base).expanduser() / "declines.md"
 
+    def _resolve_surfaced_path(self) -> Path:
+        if self.config.surfaced_path:
+            return Path(self.config.surfaced_path).expanduser()
+        base = os.environ.get("AMPLIFIER_WAYFINDER_DIR") or "~/.amplifier/wayfinder"
+        return Path(base).expanduser() / "surfaced.jsonl"
+
+    def _record_surfacing(self, item_id: str) -> None:
+        """Bump the seen-memory record for a just-surfaced promoted lead.
+
+        Read-modify-rewrite (one line per id, bounded): re-read at write time so
+        the increment reflects any concurrent session's write, bump ``count`` and
+        stamp ``last_shown`` (UTC ISO). This is the hook's own deterministic
+        bookkeeping — NOT a user decision — so writing it directly is correct.
+        Any I/O failure is swallowed with a warning; a session is never wedged on
+        a bookkeeping write, and a lost write simply re-surfaces the item later.
+        """
+        path = self._resolve_surfaced_path()
+        try:
+            seen = read_surfaced(path)
+            prior = int((seen.get(item_id) or {}).get("count", 0))
+            seen[item_id] = {
+                "count": prior + 1,
+                "last_shown": datetime.now(timezone.utc).isoformat(),
+            }
+            path.parent.mkdir(parents=True, exist_ok=True)
+            body = "\n".join(
+                json.dumps({"id": rid, **rec}, ensure_ascii=False)
+                for rid, rec in seen.items()
+            )
+            tmp = path.parent / (path.name + ".tmp")
+            tmp.write_text(body + "\n", encoding="utf-8")
+            os.replace(tmp, path)  # atomic within the same dir; Windows-safe
+        except OSError:
+            logger.warning("%s: could not write surfaced-memory at %s", _SOURCE, path)
+
     # -- assembly ------------------------------------------------------------ #
     def _assemble(self, session_id: str) -> SessionCatalog:
         cached = self._catalogs.get(session_id)
@@ -512,6 +644,18 @@ class WayfinderHooks:
             for it in catalog.items.values()
             if "session:start" in it.on_events and it.id not in catalog.declined_ids
         ]
+        # Promoted-lead rotation: pool = promoted items minus declines (reusing
+        # the same decline-filter). Pick the freshest-unseen lead from the
+        # persistent seen-memory. Empty pool or rotation-off → promoted_lead stays
+        # None and the index builder falls back to today's session:start bulletin.
+        if self.config.promoted_rotation:
+            pool = [
+                it
+                for it in catalog.items.values()
+                if it.promoted and it.id not in catalog.declined_ids
+            ]
+            seen = read_surfaced(self._resolve_surfaced_path())
+            catalog.promoted_lead = _select_promoted_lead(pool, seen)
         catalog.index_text = _build_index_block(catalog)
         self._catalogs[session_id] = catalog
         return catalog
@@ -561,6 +705,11 @@ class WayfinderHooks:
                     ephemeral=True,
                 )
             self._surfaced.add(session_id)
+            # Record the surfacing ONLY now that the lead actually lands (the
+            # self-intro defer path returns above without reaching here, so a
+            # deferred lead is never recorded). Rotation-only bookkeeping.
+            if catalog.promoted_lead is not None:
+                self._record_surfacing(catalog.promoted_lead.id)
             if catalog.index_text:
                 return HookResult(
                     action="inject_context",
@@ -674,6 +823,8 @@ async def mount(
             "content_dir": wf_config.content_dir or "<auto>",
             "content_sources": dict(wf_config.content_sources),
             "declines_path": wf_config.declines_path or "<env/HOME default>",
+            "surfaced_path": wf_config.surfaced_path or "<env/HOME default>",
+            "promoted_rotation": wf_config.promoted_rotation,
             "signals_enabled": wf_config.signals_enabled,
             "curate": wf_config.curate,
             "max_hints_per_session": wf_config.max_hints_per_session,
