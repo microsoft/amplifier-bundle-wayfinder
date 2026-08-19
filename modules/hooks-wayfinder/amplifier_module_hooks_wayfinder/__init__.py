@@ -381,12 +381,20 @@ def _build_index_block(catalog: SessionCatalog) -> str:
             "frontmatter; declined offers already filtered out). Surface anything "
             "below ONLY via propose→show→ack→act, one at a time, in wayfinder's voice."
         ),
+        (
+            "To show any packet's body, run its `body:` action EXACTLY as written "
+            "(including its @namespace prefix — it may point to another bundle). "
+            "Never glob/grep/search for the file. This menu is authoritative about "
+            "what EXISTS: if an item is listed, it exists — follow its action."
+        ),
         "",
         "Offers on the menu:",
     ]
     for it in live:
         cat = f" [{it.category}]" if it.category else ""
         lines.append(f"- {it.id}{cat}: {it.headline}")
+        if it.action:
+            lines.append(f"    body: {it.action}")
 
     # Lead: the rotation-chosen promoted item when present (already
     # decline-filtered), else today's on_event:session:start bulletin(s).
