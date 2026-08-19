@@ -12,15 +12,22 @@ Three deterministic, config-tunable, ephemeral jobs:
    This handler does the deterministic WORK and caches the result; it injects
    nothing (so nothing persistent is ever added).
 
-2. ``prompt:submit`` (first prompt of the session) — deliver the catalog index +
-   the rotation lead, in packet shape, as an EPHEMERAL injection, and record the
-   surfacing in the seen-memory (the hook's own deterministic bookkeeping). Zero
-   promoted items (or ``promoted_rotation: false``) falls back to surfacing the
-   single ``on_event: session:start`` bulletin, as before.
+2. ``prompt:submit`` (first prompt of the session) — apply the FIRST-TOUCH policy
+   (F1): classify the opening prompt (orienting | greeting | task | ambiguous)
+   and surface accordingly — orienting gets today's full lead (catalog index +
+   rotation packet), greeting/ambiguous get a headline-only LIGHT tease, and a
+   task-shaped opener gets NOTHING this turn (don't interrupt someone who came to
+   work). Identity-orienting queries still route to the self-intro (deferring the
+   lead), unchanged. Zero promoted items (or ``promoted_rotation: false``) falls
+   back to the single ``on_event: session:start`` bulletin, as before. Any lead
+   that actually lands records its surfacing in the seen-memory.
 
-3. ``prompt:submit`` (later prompts) — one conservative ``prompt_matches`` signal
-   per offer, rate-limited and declines-filtered. A single nudge only — the hook
-   can never act.
+3. ``prompt:submit`` (any later prompt) — TWO signals, checked in order: the
+   re-summonable MENU (F3) fires on "what else / the menu / more options" at any
+   turn and injects the full current offer menu (declines filtered, notes when
+   the rotation is all-seen) so the menu never dead-ends; otherwise one
+   conservative ``prompt_matches`` nudge per offer, rate-limited and
+   declines-filtered. A single nudge only — the hook can never act.
 
 Why delivery rides ``prompt:submit`` and not ``session:start``: the only
 CONFIRMED ephemeral-injection path in the reference orchestrator
@@ -54,6 +61,101 @@ from amplifier_core import HookResult
 logger = logging.getLogger(__name__)
 
 _SOURCE = "hooks-wayfinder"
+
+
+# --------------------------------------------------------------------------- #
+# First-touch classification defaults (F1) + menu re-summon defaults (F3)
+#
+# All are conservative, keyword/regex, case-insensitive (compiled with
+# re.IGNORECASE). Every set is a tunable config knob; these are only the
+# defaults. Precedence on the first prompt is orienting -> greeting -> task ->
+# ambiguous, so each set's job differs:
+#   - orienting   : SPECIFIC system-orientation phrasings only ("what's new",
+#                   "what can you do") -> keep today's full-lead behavior.
+#   - greeting    : WHOLE-message anchored (^...$) bare hellos, so a greeting
+#                   that carries a task ("hi, help me build X") does NOT match
+#                   here and falls through to the task set -> light headline.
+#   - task        : work signals (imperatives, "I need", errors, a trailing ?)
+#                   -> stay QUIET, don't interrupt someone who came to work.
+#   - menu (F3)   : "what else / more / the menu" -> re-summon the full menu at
+#                   any turn. Kept disjoint from orienting so it never steals
+#                   an orienting first prompt.
+# --------------------------------------------------------------------------- #
+_DEFAULT_ORIENTING_PATTERNS: tuple[str, ...] = (
+    r"\bwhat(?:'?s| is| are)?\s+new\b",
+    r"\banything\s+new\b",
+    r"\bwhat\s+can\s+you\s+(?:do|help)\b",
+    r"\bwhat\s+(?:do|can)\s+you\s+do\b",
+    r"\bwhat\s+are\s+you\s+(?:able|capable)\b",
+    r"\bwho\s+are\s+you\b",
+    r"\bwhat\s+is\s+this\b",
+    r"\bwhat(?:'?s| is)\s+wayfinder\b",
+    r"\bhow\s+do\s+i\s+(?:use|get\s+started|start|begin)\b",
+    r"\bhow\s+does\s+this\s+work\b",
+    r"\bwhat\s+should\s+i\s+know\b",
+    r"\bgetting\s+started\b",
+)
+_DEFAULT_GREETING_PATTERNS: tuple[str, ...] = (
+    (
+        r"^\s*(?:hi+|hey+|hello+|yo+|sup|howdy|hiya|heya|greetings|hi\s+there|"
+        r"hey\s+there|hello\s+there|good\s+(?:morning|afternoon|evening|day)|"
+        r"g'?day|gm|mornin[g']?|what'?s\s+(?:up|good)|how'?s\s+it\s+going)"
+        r"\b[\s!.,?~-]*$"
+    ),
+    r"^\s*(?:hi+|hey+|hello+|yo+|greetings)\s+wayfinder\b[\s!.,?~-]*$",
+)
+_DEFAULT_TASK_PATTERNS: tuple[str, ...] = (
+    r"\bi\s+need\b",
+    r"\bi\s+want\s+to\b",
+    r"\bi'?m\s+trying\s+to\b",
+    r"\bi'?d\s+like\s+to\b",
+    r"\bhelp\s+me\b",
+    (
+        r"\bcan\s+you\s+(?:help|write|build|fix|add|make|create|implement|"
+        r"refactor|debug|review|update|change|set\s+up|generate)\b"
+    ),
+    r"\bcould\s+you\b",
+    r"\bplease\b",
+    r"\blet'?s\b",
+    (
+        r"\b(?:build|fix|add|implement|write|debug|create|refactor|update|change|"
+        r"remove|delete|install|configure|generate|migrate|optimi[sz]e)\b"
+    ),
+    (
+        r"\berror\b|\bexception\b|\btraceback\b|\bstack\s*trace\b|"
+        r"\bfail(?:ed|ing|ure)?\b|\bbug\b|\bbroken\b|\bcrash"
+    ),
+    r"\?\s*$",
+)
+_DEFAULT_MENU_PATTERNS: tuple[str, ...] = (
+    r"\bwhat\s+else\b",
+    r"\banything\s+else\b",
+    r"\bwhat\s+other\b",
+    r"\bother\s+(?:offers?|options?)\b",
+    r"\bmore\s+options?\b",
+    r"\bshow\s+(?:me\s+)?(?:the\s+)?(?:full\s+)?menu\b",
+    r"\bthe\s+(?:full\s+)?menu\b",
+    r"\bfull\s+menu\b",
+    r"\blist\s+(?:the\s+|all\s+)?offers?\b",
+    r"\ball\s+(?:the\s+)?offers?\b",
+)
+
+
+def _coerce_patterns(raw: Any, default: tuple[str, ...]) -> tuple[str, ...]:
+    """Coerce a config override into a tuple of pattern strings, else default.
+
+    Accepts a single string (one pattern), a list/tuple (many), or None/empty
+    (keep the default). An override that resolves to zero usable patterns also
+    falls back to the default rather than silently disabling the classifier.
+    """
+    if raw is None:
+        return default
+    if isinstance(raw, str):
+        return (raw,) if raw.strip() else default
+    if isinstance(raw, (list, tuple)):
+        vals = tuple(str(v).strip() for v in raw if v and str(v).strip())
+        return vals or default
+    return default
 
 
 # --------------------------------------------------------------------------- #
@@ -97,6 +199,22 @@ class WayfinderConfig:
     # Amplifier-capabilities one) and, on the first prompt, defers the
     # session:start bulletin one turn so the two don't compete for salience.
     self_intro_ids: tuple[str, ...] = ("about-wayfinder",)
+    # F1 first-touch policy. When true (default), classify the FIRST prompt of a
+    # session (orienting | greeting | task | ambiguous) and surface accordingly:
+    # orienting -> today's full lead; greeting/ambiguous -> headline-only light
+    # lead; task -> stay QUIET this turn. When false, fall back to today's
+    # always-full-lead behavior. The three pattern sets below are the tunable
+    # heuristics; precedence is orienting -> greeting -> task -> ambiguous.
+    first_touch: bool = True
+    orienting_patterns: tuple[str, ...] = _DEFAULT_ORIENTING_PATTERNS
+    greeting_patterns: tuple[str, ...] = _DEFAULT_GREETING_PATTERNS
+    task_patterns: tuple[str, ...] = _DEFAULT_TASK_PATTERNS
+    # F3 re-summonable menu. When true (default), a menu-signal at ANY turn
+    # injects the full current offer menu (declines already filtered). The
+    # pattern set is tunable; kept disjoint from orienting so it never steals an
+    # orienting first prompt.
+    menu_enabled: bool = True
+    menu_patterns: tuple[str, ...] = _DEFAULT_MENU_PATTERNS
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any] | None) -> WayfinderConfig:
@@ -128,6 +246,20 @@ class WayfinderConfig:
             curate=bool(raw.get("curate", False)),
             max_hints_per_session=int(raw.get("max_hints_per_session", 3)),
             self_intro_ids=self_intro_ids,
+            first_touch=bool(raw.get("first_touch", True)),
+            orienting_patterns=_coerce_patterns(
+                raw.get("orienting_patterns"), _DEFAULT_ORIENTING_PATTERNS
+            ),
+            greeting_patterns=_coerce_patterns(
+                raw.get("greeting_patterns"), _DEFAULT_GREETING_PATTERNS
+            ),
+            task_patterns=_coerce_patterns(
+                raw.get("task_patterns"), _DEFAULT_TASK_PATTERNS
+            ),
+            menu_enabled=bool(raw.get("menu_enabled", True)),
+            menu_patterns=_coerce_patterns(
+                raw.get("menu_patterns"), _DEFAULT_MENU_PATTERNS
+            ),
         )
 
 
@@ -479,6 +611,11 @@ class WayfinderHooks:
         self._hinted: dict[str, set[str]] = {}
         self._hint_counts: dict[str, int] = {}
         self._source_cache: dict[str, Path] = {}
+        # Compile the first-touch (F1) + menu (F3) classifier sets once at mount.
+        self._orienting_re = _compile_patterns(list(config.orienting_patterns))
+        self._greeting_re = _compile_patterns(list(config.greeting_patterns))
+        self._task_re = _compile_patterns(list(config.task_patterns))
+        self._menu_re = _compile_patterns(list(config.menu_patterns))
 
     # -- path / source resolution -------------------------------------------- #
     def _resolve_mention(self, value: str) -> Path | None:
@@ -695,13 +832,28 @@ class WayfinderHooks:
             logger.exception("%s: prompt:submit assembly failed", _SOURCE)
             return HookResult(action="continue")
 
-        # First prompt of the session → normally deliver the index + current
-        # bulletin. But if the very first prompt is an ORIENTING query, the
-        # bulletin and the self-intro concept would compete for salience on the
-        # same turn (the observed bug). So: check for a self-intro signal FIRST;
-        # if one fires, deliver the directive self-intro nudge and DEFER the
-        # bulletin — we deliberately do not mark the session surfaced, so the
-        # bulletin still lands on the next prompt.
+        # F3 re-summonable menu — checked on EVERY turn (incl. the first) BEFORE
+        # first-touch/signal routing, so "what else?" never dead-ends and never
+        # gets swallowed by a per-item hint. It respects the decline-filter and
+        # notes when this rotation's highlights are all seen. Marking the session
+        # surfaced keeps the first-touch lead from also firing later.
+        if self.config.menu_enabled and self._matches_menu(prompt):
+            self._surfaced.add(session_id)
+            menu = self._build_menu_block(catalog)
+            if menu:
+                return HookResult(
+                    action="inject_context",
+                    context_injection=menu,
+                    context_injection_role="system",
+                    ephemeral=True,
+                )
+            return HookResult(action="continue")
+
+        # First prompt of the session. Check for a self-intro signal FIRST
+        # (identity-orienting query): if one fires, deliver the directive
+        # self-intro nudge and DEFER the lead — we deliberately do not mark the
+        # session surfaced, so the lead still lands on the next prompt. This is
+        # unchanged.
         if session_id not in self._surfaced:
             self_intro = self._match_self_intro(session_id, prompt, catalog)
             if self_intro is not None:
@@ -712,16 +864,46 @@ class WayfinderHooks:
                     context_injection_role="system",
                     ephemeral=True,
                 )
+
+            # F1 first-touch policy: classify the first prompt and surface
+            # accordingly. first_touch=False forces "orienting" = today's
+            # always-full-lead behavior.
+            bucket = (
+                self._classify_first_touch(prompt)
+                if self.config.first_touch
+                else "orienting"
+            )
+            # The session's first touch is now handled either way (task included,
+            # so a working session is not re-prompted with a lead next turn).
             self._surfaced.add(session_id)
-            # Record the surfacing ONLY now that the lead actually lands (the
-            # self-intro defer path returns above without reaching here, so a
-            # deferred lead is never recorded). Rotation-only bookkeeping.
-            if catalog.promoted_lead is not None:
-                self._record_surfacing(catalog.promoted_lead.id)
-            if catalog.index_text:
+
+            # task-shaped → QUIET: inject nothing, record nothing (nothing shown).
+            # Per-item prompt_matches direct-summon still works on later prompts.
+            if bucket == "task":
+                return HookResult(action="continue")
+
+            # orienting → today's full lead (index + SURFACE NOW packet).
+            if bucket == "orienting":
+                if catalog.promoted_lead is not None:
+                    self._record_surfacing(catalog.promoted_lead.id)
+                if catalog.index_text:
+                    return HookResult(
+                        action="inject_context",
+                        context_injection=catalog.index_text,
+                        context_injection_role="system",
+                        ephemeral=True,
+                    )
+                return HookResult(action="continue")
+
+            # greeting / ambiguous → LIGHT: headline-only tease. It still counts
+            # as shown, so record the rotation surfacing.
+            light = self._build_light_lead_block(catalog)
+            if light:
+                if catalog.promoted_lead is not None:
+                    self._record_surfacing(catalog.promoted_lead.id)
                 return HookResult(
                     action="inject_context",
-                    context_injection=catalog.index_text,
+                    context_injection=light,
                     context_injection_role="system",
                     ephemeral=True,
                 )
@@ -799,6 +981,120 @@ class WayfinderHooks:
                 )
         return HookResult(action="continue")
 
+    # -- F1 first-touch classification / F3 menu re-summon ------------------- #
+    def _classify_first_touch(self, prompt: str) -> str:
+        """Bucket the FIRST prompt: orienting | greeting | task | ambiguous.
+
+        Precedence is deliberate. Orienting is checked first (SPECIFIC
+        system-orientation phrasings). Greeting is WHOLE-message anchored, so a
+        greeting that also carries work ("hi, help me build X") does NOT match
+        here and falls through to task. Task catches work signals (imperatives,
+        "I need", errors, a trailing ?). Anything left is ambiguous.
+        """
+        text = prompt or ""
+        if any(p.search(text) for p in self._orienting_re):
+            return "orienting"
+        if any(p.search(text) for p in self._greeting_re):
+            return "greeting"
+        if any(p.search(text) for p in self._task_re):
+            return "task"
+        return "ambiguous"
+
+    def _matches_menu(self, prompt: str) -> bool:
+        """True when the prompt is a menu re-summon ("what else / the menu")."""
+        text = prompt or ""
+        return any(p.search(text) for p in self._menu_re)
+
+    def _lead_for_light(self, catalog: SessionCatalog) -> CatalogItem | None:
+        """The one item a light greeting should tease: the rotation lead, else
+        the freshest live session:start bulletin."""
+        if catalog.promoted_lead is not None:
+            return catalog.promoted_lead
+        starts = [it for it in catalog.start_items if it.id not in catalog.declined_ids]
+        return starts[0] if starts else None
+
+    def _build_light_lead_block(self, catalog: SessionCatalog) -> str:
+        """F1 light path: ONE headline line + an invitation to open it on ack.
+
+        Never pastes the packet body or its commands (that is the heavy path).
+        Returns "" when there is nothing live to tease.
+        """
+        lead = self._lead_for_light(catalog)
+        if lead is None:
+            return ""
+        return (
+            f'<system-reminder source="{_SOURCE}">\n'
+            f"The user opened with a light greeting (no task, no question). "
+            f"Reply warmly and briefly in wayfinder's voice, then surface ONE "
+            f"line only \u2014 this session's highlight headline \u2014 and invite them "
+            f"to open it:\n"
+            f"  {lead.id} \u2014 {lead.headline}\n"
+            f"Add a light \u201csay the word and I\u2019ll show you the rest \u2014 there\u2019s a "
+            f"full menu whenever you want it.\u201d Do NOT paste the packet body or "
+            f"its commands now; open it (run its `body:` action) only on an "
+            f"explicit ack. If they just want to get to work, drop it.\n"
+            f"</system-reminder>"
+        )
+
+    def _build_menu_block(self, catalog: SessionCatalog) -> str:
+        """F3: the FULL current offer menu (declines filtered), any turn.
+
+        Headline + `body:` action per live item, in wayfinder's voice. Notes
+        honestly when this rotation's highlights have all been seen so "what
+        else?" never dead-ends. Returns "" only when the catalog is truly empty.
+        """
+        live = [
+            it for it in catalog.items.values() if it.id not in catalog.declined_ids
+        ]
+        if not live:
+            if not catalog.items:
+                return ""  # nothing exists at all — stay silent
+            return (
+                f'<system-reminder source="{_SOURCE}">\n'
+                f"The user asked what else is available, but every wayfinder "
+                f"offer is dismissed for now. Tell them plainly there\u2019s nothing "
+                f"on the menu right now, in wayfinder's voice \u2014 don\u2019t invent "
+                f"offers.\n"
+                f"</system-reminder>"
+            )
+        lines = [
+            f'<system-reminder source="{_SOURCE}">',
+            (
+                "The user asked what else is available \u2014 surface the FULL "
+                "current wayfinder menu (declined offers already filtered out), "
+                "in wayfinder's voice, as a compact list. Showing the list IS "
+                "the answer, so no propose\u2192ack gate on the list itself; opening "
+                "any packet still needs an explicit ack."
+            ),
+            (
+                "To open any packet, run its `body:` action EXACTLY as written "
+                "(including its @namespace prefix); never glob/grep/search for "
+                "the file. This menu is authoritative about what EXISTS."
+            ),
+            "",
+            "Offers on the menu:",
+        ]
+        for it in live:
+            cat = f" [{it.category}]" if it.category else ""
+            lines.append(f"- {it.id}{cat}: {it.headline}")
+            if it.action:
+                lines.append(f"    body: {it.action}")
+        # Honest "you've seen it all" note: only when EVERY promoted highlight
+        # has already been surfaced this rotation (the "what else is new?"
+        # dead-end the console review hit).
+        promoted = [it for it in live if it.promoted]
+        if promoted:
+            seen = read_surfaced(self._resolve_surfaced_path())
+            if all(int((seen.get(it.id) or {}).get("count", 0)) > 0 for it in promoted):
+                lines.append("")
+                lines.append(
+                    "Note: they\u2019ve already seen all of this rotation\u2019s "
+                    "highlights \u2014 say so honestly (nothing brand-new to feature), "
+                    "but the full menu above is still open to them."
+                )
+        lines.append("</system-reminder>")
+        return "\n".join(lines)
+
 
 # --------------------------------------------------------------------------- #
 # Mount
@@ -837,5 +1133,11 @@ async def mount(
             "curate": wf_config.curate,
             "max_hints_per_session": wf_config.max_hints_per_session,
             "self_intro_ids": list(wf_config.self_intro_ids),
+            "first_touch": wf_config.first_touch,
+            "orienting_patterns": list(wf_config.orienting_patterns),
+            "greeting_patterns": list(wf_config.greeting_patterns),
+            "task_patterns": list(wf_config.task_patterns),
+            "menu_enabled": wf_config.menu_enabled,
+            "menu_patterns": list(wf_config.menu_patterns),
         },
     }
