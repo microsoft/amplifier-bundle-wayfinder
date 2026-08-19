@@ -2,8 +2,8 @@
 
 Three deterministic, config-tunable, ephemeral jobs:
 
-1. ``session:start`` — resolve the content dir, scan per-item frontmatter, and
-   assemble the DERIVED offer catalog (replacing the hand-maintained
+1. ``session:start`` — resolve the content sources, scan per-item frontmatter,
+   and assemble the DERIVED offer catalog (replacing the hand-maintained
    ``offer-catalog.md``). Read the decline file and filter it here — decline
    *enforcement* is deterministic. This handler does the deterministic WORK and
    caches the result; it injects nothing (so nothing persistent is ever added).
@@ -55,7 +55,17 @@ class WayfinderConfig:
     """All knobs are tunable via the hook's ``config:`` in the behavior YAML."""
 
     enabled: bool = True
-    content_dir: str | None = None  # default: auto-detect <bundle>/content
+    # Own-dir override. Scalar, back-compat, now @-aware (accepts an @ns:path or
+    # a literal filesystem path). When set it OVERRIDES the implicit
+    # auto-detected own-dir (<bundle>/content). When unset the own-dir is
+    # auto-detected and always loaded first.
+    content_dir: str | None = None
+    # Additive, keyed map of EXTRA content packs; each value is an @ns:path or a
+    # literal filesystem path. A MAP (not a list) so hook-config deep-merge by
+    # module id merges packs additively by key across composition instead of
+    # replacing — two bundles can each add a pack. Own-dir loads first (source
+    # key "default"), then these in declared order; first-id-wins on collision.
+    content_sources: dict[str, str] = field(default_factory=dict)
     declines_path: str | None = None  # default: env/HOME wayfinder dir
     signals_enabled: bool = True
     curate: bool = False  # False = derive-first (all items); True = only curated: true
@@ -78,9 +88,19 @@ class WayfinderConfig:
             self_intro_ids = (raw_self_intro,)
         else:
             self_intro_ids = tuple(str(v).strip() for v in raw_self_intro if v)
+        raw_sources = raw.get("content_sources")
+        if isinstance(raw_sources, dict):
+            content_sources = {
+                str(k): str(v).strip()
+                for k, v in raw_sources.items()
+                if v and str(v).strip()
+            }
+        else:
+            content_sources = {}
         return cls(
             enabled=bool(raw.get("enabled", True)),
             content_dir=raw.get("content_dir") or None,
+            content_sources=content_sources,
             declines_path=raw.get("declines_path") or None,
             signals_enabled=bool(raw.get("signals_enabled", True)),
             curate=bool(raw.get("curate", False)),
@@ -104,6 +124,9 @@ class CatalogItem:
     prompt_patterns: list[re.Pattern[str]] = field(default_factory=list)
     curated: bool = False
     source_path: str = ""
+    # Provenance: the source key this item came from ("default" = own content,
+    # else the content_sources map key). Captured now; no consumer yet.
+    source: str = "default"
 
 
 @dataclass
@@ -166,7 +189,9 @@ def _compile_patterns(patterns: list[str]) -> list[re.Pattern[str]]:
     return compiled
 
 
-def _item_from_meta(meta: dict[str, Any], source_path: str) -> CatalogItem | None:
+def _item_from_meta(
+    meta: dict[str, Any], source_path: str, source: str = "default"
+) -> CatalogItem | None:
     item_id = meta.get("id")
     if not item_id or not isinstance(item_id, str):
         return None  # not a catalog item
@@ -184,32 +209,45 @@ def _item_from_meta(meta: dict[str, Any], source_path: str) -> CatalogItem | Non
         prompt_patterns=_compile_patterns(_as_str_list(signals.get("prompt_matches"))),
         curated=bool(meta.get("curated", False)),
         source_path=source_path,
+        source=source,
     )
 
 
-def load_catalog(content_dir: Path, curate: bool) -> dict[str, CatalogItem]:
-    """Scan ``content_dir`` recursively and derive the catalog from frontmatter.
+def load_catalog(
+    sources: list[tuple[str, Path]], curate: bool
+) -> dict[str, CatalogItem]:
+    """Derive the catalog from frontmatter across ordered content sources.
 
-    First-id-wins on collision (matches the design's source precedence). When
-    ``curate`` is true, only items carrying ``curated: true`` are included.
+    ``sources`` is an ordered ``(source_key, dir)`` list — own content first
+    (key ``"default"``), then each configured pack in declared order. Each dir
+    is scanned recursively. First-id-wins on collision (own/public content wins;
+    a shadowed id is logged with both source keys). When ``curate`` is true,
+    only items carrying ``curated: true`` are included.
     """
     items: dict[str, CatalogItem] = {}
-    for md_path in sorted(content_dir.rglob("*.md")):
-        try:
-            text = md_path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            logger.warning("%s: could not read %s; skipping", _SOURCE, md_path)
-            continue
-        meta, _ = parse_frontmatter(text)
-        item = _item_from_meta(meta, str(md_path))
-        if item is None:
-            continue
-        if curate and not item.curated:
-            continue
-        if item.id in items:
-            logger.warning("%s: duplicate offer id %r; keeping first", _SOURCE, item.id)
-            continue
-        items[item.id] = item
+    for source_key, content_dir in sources:
+        for md_path in sorted(content_dir.rglob("*.md")):
+            try:
+                text = md_path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                logger.warning("%s: could not read %s; skipping", _SOURCE, md_path)
+                continue
+            meta, _ = parse_frontmatter(text)
+            item = _item_from_meta(meta, str(md_path), source_key)
+            if item is None:
+                continue
+            if curate and not item.curated:
+                continue
+            if item.id in items:
+                logger.warning(
+                    "%s: offer id %r from source %r shadowed by source %r; keeping first",
+                    _SOURCE,
+                    item.id,
+                    source_key,
+                    items[item.id].source,
+                )
+                continue
+            items[item.id] = item
     return items
 
 
@@ -325,18 +363,85 @@ def _build_self_intro_block(item: CatalogItem) -> str:
 # Hook handlers
 # --------------------------------------------------------------------------- #
 class WayfinderHooks:
-    def __init__(self, config: WayfinderConfig):
+    def __init__(self, config: WayfinderConfig, coordinator: Any = None):
         self.config = config
+        # Captured at mount; the mention_resolver capability is only reached
+        # lazily on the session:start assembly path (it is registered AFTER
+        # module mount, so it must never be touched at mount time).
+        self._coordinator = coordinator
         self._catalogs: dict[str, SessionCatalog] = {}
         self._surfaced: set[str] = set()
         self._hinted: dict[str, set[str]] = {}
         self._hint_counts: dict[str, int] = {}
+        self._source_cache: dict[str, Path] = {}
 
-    # -- path resolution ----------------------------------------------------- #
-    def _resolve_content_dir(self) -> Path | None:
+    # -- path / source resolution -------------------------------------------- #
+    def _resolve_mention(self, value: str) -> Path | None:
+        """Resolve an ``@ns:path`` value via the coordinator's mention_resolver.
+
+        Lazy by contract: the capability is registered AFTER module mount, so
+        this is only ever called on the session:start assembly path. A missing
+        capability, a resolver error, or an unresolvable value (typo/uncached)
+        → ``None`` + a warning; the caller skips that one source rather than
+        wedging or fetching at runtime. Successful resolutions are cached.
+        """
+        cached = self._source_cache.get(value)
+        if cached is not None:
+            return cached
+        resolver = None
+        if self._coordinator is not None:
+            resolver = self._coordinator.get_capability("mention_resolver")
+        if resolver is None:
+            logger.warning(
+                "%s: mention_resolver capability unavailable; skipping source %r",
+                _SOURCE,
+                value,
+            )
+            return None
+        try:
+            resolved = resolver.resolve(value)
+        except Exception:  # noqa: BLE001 — deliberate: skip this one source, never wedge
+            logger.warning(
+                "%s: mention_resolver failed on %r; skipping source", _SOURCE, value
+            )
+            return None
+        if not resolved:
+            logger.warning(
+                "%s: could not resolve %r (typo/uncached?); skipping source",
+                _SOURCE,
+                value,
+            )
+            return None
+        path = Path(resolved).expanduser()
+        self._source_cache[value] = path
+        return path
+
+    def _resolve_source_value(self, value: str) -> Path | None:
+        """Resolve one source value: ``@ns:path`` via the resolver, else a path.
+
+        A literal (non-``@``) path always works with no resolver present.
+        """
+        value = value.strip()
+        if not value:
+            return None
+        if value.startswith("@"):
+            return self._resolve_mention(value)
+        return Path(value).expanduser()
+
+    def _resolve_own_dir(self) -> Path | None:
+        """Source #0 — the implicit own-dir, unless ``content_dir`` overrides it."""
         if self.config.content_dir:
-            p = Path(self.config.content_dir).expanduser()
-            return p if p.is_dir() else None
+            path = self._resolve_source_value(self.config.content_dir)
+            if path is None:
+                return None  # @-mention path already warned
+            if not path.is_dir():
+                logger.warning(
+                    "%s: content_dir %s is not a directory; own content unavailable",
+                    _SOURCE,
+                    path,
+                )
+                return None
+            return path
         # Auto-detect: this file lives at
         #   <bundle>/modules/hooks-wayfinder/amplifier_module_hooks_wayfinder/__init__.py
         # parents: [0]=pkg [1]=hooks-wayfinder [2]=modules [3]=<bundle root>
@@ -346,6 +451,33 @@ class WayfinderHooks:
         except IndexError:
             return None
         return candidate if candidate.is_dir() else None
+
+    def _resolve_sources(self) -> list[tuple[str, Path]]:
+        """Ordered ``(source_key, dir)`` list: own-dir first, then each pack.
+
+        Own content is key ``"default"`` and always leads (unless it fails to
+        resolve). Each configured ``content_sources`` pack follows in declared
+        (dict) order. Any source that fails to resolve or is not a directory is
+        skipped with a warning — never fatal.
+        """
+        sources: list[tuple[str, Path]] = []
+        own = self._resolve_own_dir()
+        if own is not None:
+            sources.append(("default", own))
+        for key, value in self.config.content_sources.items():
+            path = self._resolve_source_value(value)
+            if path is None:
+                continue  # resolution failed; already warned
+            if not path.is_dir():
+                logger.warning(
+                    "%s: content source %r (%s) is not a directory; skipping",
+                    _SOURCE,
+                    key,
+                    path,
+                )
+                continue
+            sources.append((key, path))
+        return sources
 
     def _resolve_declines_path(self) -> Path:
         if self.config.declines_path:
@@ -360,16 +492,16 @@ class WayfinderHooks:
             return cached
 
         catalog = SessionCatalog()
-        content_dir = self._resolve_content_dir()
-        if content_dir is None:
-            logger.warning("%s: no content dir resolved; catalog is empty", _SOURCE)
+        sources = self._resolve_sources()
+        if not sources:
+            logger.warning("%s: no content sources resolved; catalog is empty", _SOURCE)
             self._catalogs[session_id] = catalog
             return catalog
 
         try:
-            catalog.items = load_catalog(content_dir, self.config.curate)
+            catalog.items = load_catalog(sources, self.config.curate)
         except OSError:
-            logger.warning("%s: failed scanning %s", _SOURCE, content_dir)
+            logger.warning("%s: failed scanning content sources", _SOURCE)
             catalog.items = {}
 
         catalog.declined_ids = read_declined_ids(
@@ -524,7 +656,7 @@ async def mount(
     session:start-vs-prompt:submit delivery rationale.
     """
     wf_config = WayfinderConfig.from_dict(config)
-    hooks = WayfinderHooks(wf_config)
+    hooks = WayfinderHooks(wf_config, coordinator=coordinator)
 
     coordinator.hooks.register(
         "session:start", hooks.on_session_start, priority=10, name=_SOURCE
@@ -540,6 +672,7 @@ async def mount(
         "config": {
             "enabled": wf_config.enabled,
             "content_dir": wf_config.content_dir or "<auto>",
+            "content_sources": dict(wf_config.content_sources),
             "declines_path": wf_config.declines_path or "<env/HOME default>",
             "signals_enabled": wf_config.signals_enabled,
             "curate": wf_config.curate,
