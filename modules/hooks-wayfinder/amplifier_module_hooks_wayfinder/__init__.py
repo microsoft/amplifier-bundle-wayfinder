@@ -60,10 +60,24 @@ class WayfinderConfig:
     signals_enabled: bool = True
     curate: bool = False  # False = derive-first (all items); True = only curated: true
     max_hints_per_session: int = 3
+    # Offer ids that answer an ORIENTING query ("what is wayfinder?", "what can
+    # you help with?", "who are you", "how do I get started"). When one of these
+    # signals fires the hook injects a STRONGER, directive nudge (deliver the
+    # self-introduction, in voice, this is a wayfinder question not a generic
+    # Amplifier-capabilities one) and, on the first prompt, defers the
+    # session:start bulletin one turn so the two don't compete for salience.
+    self_intro_ids: tuple[str, ...] = ("about-wayfinder",)
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any] | None) -> WayfinderConfig:
         raw = raw or {}
+        raw_self_intro = raw.get("self_intro_ids")
+        if raw_self_intro is None:
+            self_intro_ids: tuple[str, ...] = ("about-wayfinder",)
+        elif isinstance(raw_self_intro, str):
+            self_intro_ids = (raw_self_intro,)
+        else:
+            self_intro_ids = tuple(str(v).strip() for v in raw_self_intro if v)
         return cls(
             enabled=bool(raw.get("enabled", True)),
             content_dir=raw.get("content_dir") or None,
@@ -71,6 +85,7 @@ class WayfinderConfig:
             signals_enabled=bool(raw.get("signals_enabled", True)),
             curate=bool(raw.get("curate", False)),
             max_hints_per_session=int(raw.get("max_hints_per_session", 3)),
+            self_intro_ids=self_intro_ids,
         )
 
 
@@ -277,6 +292,35 @@ def _build_hint_block(item: CatalogItem) -> str:
     )
 
 
+def _build_self_intro_block(item: CatalogItem) -> str:
+    """Strong, directive nudge for an ORIENTING query.
+
+    Unlike ``_build_hint_block`` (a soft "possible fit"), this tells the agent
+    plainly: the user is orienting to *wayfinder*, so answer by delivering
+    wayfinder's own self-introduction in wayfinder's voice — this is a wayfinder
+    question, not a generic Amplifier-capabilities one — and lead with it over
+    the session-start bulletin this turn. Surfacing the overview IS the answer to
+    an orienting question, so no propose→ack gate applies here (the offers listed
+    inside the overview stay ack-gated as usual). It still mirrors the bulletin's
+    point-don't-absorb discipline: summarise, commands-first, read on demand.
+    """
+    read_cmd = item.action or f'read_file("{item.source_path}")'
+    return (
+        f'<system-reminder source="{_SOURCE}">\n'
+        f"The user is orienting to WAYFINDER — this is a wayfinder question, "
+        f"NOT a generic Amplifier-capabilities question. Answer THIS turn by "
+        f"delivering wayfinder's own self-introduction ('{item.id}': "
+        f"{item.headline}).\n"
+        f"Do it in wayfinder's voice: {read_cmd}, then lead with a 2–3 line "
+        f"summary of what wayfinder is and the small curated menu it can point "
+        f"you to (commands-first); read the file on demand rather than pasting "
+        f"it whole. Prioritise this over the session-start bulletin this turn — "
+        f"the bulletin can wait. The offers named in the overview stay ack-gated: "
+        f"surface, don't run anything unattended.\n"
+        f"</system-reminder>"
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Hook handlers
 # --------------------------------------------------------------------------- #
@@ -367,8 +411,23 @@ class WayfinderHooks:
             logger.exception("%s: prompt:submit assembly failed", _SOURCE)
             return HookResult(action="continue")
 
-        # First prompt of the session → deliver the index + current bulletin.
+        # First prompt of the session → normally deliver the index + current
+        # bulletin. But if the very first prompt is an ORIENTING query, the
+        # bulletin and the self-intro concept would compete for salience on the
+        # same turn (the observed bug). So: check for a self-intro signal FIRST;
+        # if one fires, deliver the directive self-intro nudge and DEFER the
+        # bulletin — we deliberately do not mark the session surfaced, so the
+        # bulletin still lands on the next prompt.
         if session_id not in self._surfaced:
+            self_intro = self._match_self_intro(session_id, prompt, catalog)
+            if self_intro is not None:
+                self._record_hint(session_id, self_intro)
+                return HookResult(
+                    action="inject_context",
+                    context_injection=_build_self_intro_block(self_intro),
+                    context_injection_role="system",
+                    ephemeral=True,
+                )
             self._surfaced.add(session_id)
             if catalog.index_text:
                 return HookResult(
@@ -384,23 +443,68 @@ class WayfinderHooks:
             return HookResult(action="continue")
         return self._maybe_hint(session_id, prompt, catalog)
 
+    # -- signal helpers ------------------------------------------------------ #
+    def _is_self_intro(self, item: CatalogItem) -> bool:
+        return item.id in self.config.self_intro_ids
+
+    def _self_intro_items(self, catalog: SessionCatalog) -> list[CatalogItem]:
+        return [it for it in catalog.items.values() if self._is_self_intro(it)]
+
+    def _record_hint(self, session_id: str, item: CatalogItem) -> None:
+        """Book a single nudge against the once-per-session + cap guardrails."""
+        self._hinted.setdefault(session_id, set()).add(item.id)
+        self._hint_counts[session_id] = self._hint_counts.get(session_id, 0) + 1
+
+    def _match_self_intro(
+        self, session_id: str, prompt: str, catalog: SessionCatalog
+    ) -> CatalogItem | None:
+        """Return the self-intro item whose signal matches this prompt, or None.
+
+        Subject to the same conservative guardrails as any other signal:
+        respects ``signals_enabled``, declines, the once-per-session hinted set,
+        and the hint cap. Patterns are unchanged (already tuned), so this stays
+        as quiet as the existing signals on unrelated prompts.
+        """
+        if not self.config.signals_enabled:
+            return None
+        if self._hint_counts.get(session_id, 0) >= self.config.max_hints_per_session:
+            return None
+        hinted = self._hinted.setdefault(session_id, set())
+        for item in self._self_intro_items(catalog):
+            if item.id in catalog.declined_ids or item.id in hinted:
+                continue
+            if not item.prompt_patterns:
+                continue
+            if any(p.search(prompt) for p in item.prompt_patterns):
+                return item
+        return None
+
     def _maybe_hint(
         self, session_id: str, prompt: str, catalog: SessionCatalog
     ) -> HookResult:
         if self._hint_counts.get(session_id, 0) >= self.config.max_hints_per_session:
             return HookResult(action="continue")
         hinted = self._hinted.setdefault(session_id, set())
-        for item in catalog.items.values():
+        # Self-intro items win the turn (an orienting query is the highest-value
+        # response), then the remaining offers in catalog order.
+        ordered = self._self_intro_items(catalog) + [
+            it for it in catalog.items.values() if not self._is_self_intro(it)
+        ]
+        for item in ordered:
             if item.id in catalog.declined_ids or item.id in hinted:
                 continue
             if not item.prompt_patterns:
                 continue
             if any(p.search(prompt) for p in item.prompt_patterns):
-                hinted.add(item.id)
-                self._hint_counts[session_id] = self._hint_counts.get(session_id, 0) + 1
+                self._record_hint(session_id, item)
+                block = (
+                    _build_self_intro_block(item)
+                    if self._is_self_intro(item)
+                    else _build_hint_block(item)
+                )
                 return HookResult(
                     action="inject_context",
-                    context_injection=_build_hint_block(item),
+                    context_injection=block,
                     context_injection_role="system",
                     ephemeral=True,
                 )
@@ -440,5 +544,6 @@ async def mount(
             "signals_enabled": wf_config.signals_enabled,
             "curate": wf_config.curate,
             "max_hints_per_session": wf_config.max_hints_per_session,
+            "self_intro_ids": list(wf_config.self_intro_ids),
         },
     }
