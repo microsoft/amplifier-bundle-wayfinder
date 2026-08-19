@@ -2,10 +2,10 @@
 id: pinning
 category: bulletin
 promoted: true
-headline: "Switch which model answers you mid-conversation — same vendor, no lost session."
+headline: "The right model for the job — you're in control, mid-conversation, no lost session."
 try_now:
   - "/provider"
-  - "/provider use haiku"
+  - "/provider use <name>"
   - "/provider auto"
 signals:
   on_event: session:start
@@ -19,29 +19,24 @@ provenance: "concept from amplifier-foundation (PROVIDER_CONTRACT, routing-matri
 
 # Current bulletin — provider pinning
 
-**Switch which model and configuration answers you, mid-conversation, without losing the session — pin a configured provider *entry* by its `id`.**
+Waiting on a top-tier model to grind through busywork a cheap, fast one could finish in a fraction of the time — and cost? You don't have to sit through it. **Pin a configured provider *entry* by its `id`, mid-conversation, and change which model answers your top-level chat — no restart, no lost history.** More capable models cost more and run slower; pinning lets you pick that trade-off per conversation instead of committing to one for the whole session.
 
-## Try it now (interactive session)
+*Prerequisite: you need more than one provider entry configured in the same family — pinning switches between entries you've already set up, so if there's only one there's nothing to switch to. Add entries with `amplifier provider` from the shell.*
 
-1. `/provider` — list your configured provider entries (each is one account + one model, named by `id`); ★ marks the default
-2. `/provider use haiku` — pin THIS conversation to that entry (e.g. a cheaper model) for a bulk stretch
-3. `/provider auto` — unpin; back to your default (the lowest-`priority` entry)
+**In practice.** You've been chewing on a hard problem with a heavy, capable entry, and the work turns to a big batch of routine edits or a wide exploration sweep. Pin a lighter, faster, cheaper entry, rip through it, then `/provider auto` back to your default — same conversation, a fraction of the cost and the wait.
 
-## Why it matters
+**How to run it.** This is BUILT-IN — the `/provider` commands are always here in an interactive app-CLI session, nothing to install:
 
-A pin changes which model/config answers your **top-level conversation** — no restart, no lost history. It's session-only and never touches `settings.yaml`. Sub-agents, model-role routing, and `/goal` are unaffected — they keep using your configuration, so delegated work stays on its own models while you steer the chat.
+- `/provider` — list your configured entries (each is one account + one model, named by `id`); ★ marks the default.
+- `/provider use <name>` — pin THIS conversation to one of those entries (reach for a lighter/cheaper one for a bulk stretch).
+- `/provider auto` — unpin; back to your default (the lowest-`priority` entry).
 
-The real lever showed up under load: a rate-limit storm cleared by pinning a *different* model at unchanged concurrency. Switching which model answers beats serializing your work down to one-request-at-a-time — you keep the throughput and route around the throttled model.
+Match the entry to the work, per conversation — a heavier, most-capable entry for hard reasoning; a balanced one for day-to-day; a light, fast, cheap one for utility, bulk, mass-parallel, or exploration-heavy stretches. A pin only steers your **top-level conversation** — sub-agents, model-role routing, and `/goal` keep their own models, so delegated work stays on its own tier while you steer the chat. The clock and the billing account both feel it.
 
-## Gotchas
+**Gotchas.**
+- **Same vendor only.** You can pin among entries from the same vendor, but not across vendors mid-conversation — your history carries vendor-specific data the other vendor's API rejects. Cross-vendor means a new session: `amplifier run -p <name>`.
+- `use` takes the entry **`id`** you set in `settings.yaml`, not a model name. Unpin is `auto` (not clear/off). A pin is session-only and never touches `settings.yaml`.
 
-- **Same vendor only.** You can move Anthropic→Anthropic or OpenAI→OpenAI, but not across vendors mid-conversation — your history carries vendor-specific data the other vendor's API rejects. Cross-vendor means a new session: `amplifier run -p <name>`.
-- `use` takes the entry **`id`** from `settings.yaml` (e.g. `haiku`), not a model name.
-- Unpin is `auto` (not clear/off).
+**More.** From the shell: `amplifier provider list` (entries), `amplifier provider test` (key check), `amplifier run -p <name>` (new session on an entry). Deeper `/provider` questions → offer `app-cli:cli-expert` if it's available; otherwise point at the amplifier-app-cli `docs/PROVIDER_PINNING.md`.
 
-## More
-
-- From the shell: `amplifier provider list` (entries), `amplifier provider test` (key check), `amplifier run -p <name>` (new session on an entry).
-- Deeper `/provider` questions → offer `app-cli:cli-expert` if it's available; otherwise point at the amplifier-app-cli `docs/PROVIDER_PINNING.md`.
-
-*Concept accurate to amplifier-foundation: a **provider** is the vendor backend (anthropic/openai/gemini); a **provider entry** is one configured account+model+config in `settings.yaml`; pinning switches which entry answers, within the same vendor. Terms: "provider entry," "id," "model," "vendor" — not "engine"/"handle." Commands verified against the installed CLI (2026-08-19). User-initiated only.*
+*Concept accurate to amplifier-foundation: a **provider** is the vendor backend; a **provider entry** is one configured account+model+config in `settings.yaml`; pinning switches which entry answers, within the same vendor. Say "provider entry," "id," "model," "vendor" — not "engine"/"handle." Commands verified against the installed CLI (2026-08-19). User-initiated only.*

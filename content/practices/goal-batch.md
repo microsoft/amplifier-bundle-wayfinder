@@ -15,28 +15,18 @@ provenance: "goal-batch skill + ten-lane-highway practice"
 
 # goal-batch — parallel autonomous lanes
 
-**Fan independent work out into parallel `/goal` lanes that can't collide, verified and merged for you.**
+You've got several independent things to do, and doing them one at a time is the slow part — each `/goal` run is unattended, but you're still running them in a line. **`goal-batch` fans independent work out into parallel `/goal` lanes that can't collide — each its own git worktree + branch + tmux `/goal` session over a disjoint file set — then verifies and merges them for you.**
 
-## Try it now
+**In practice.** Three unrelated fixes across different corners of the repo, no shared files. Instead of a serial queue, say: *"run all this through goal-batch."* It proposes a lane split, you approve it, and the lanes run at once — then the orchestrating session re-runs the full suite itself after every merge and never trusts a lane's own "done."
 
-1. `load_skill("goal-batch")` — then describe the batch in prose.
+**How to invoke.** `goal-batch` is a **skill**, invoked in natural language — "use the goal-batch skill and run this batch: …". A bare `/goal-batch` token does **not** load it; name it in prose. (A slash form works only if your app wires skills to slash commands.)
 
-## Why it matters
+**Is it here?** Check the visible skills list for `goal-batch`. It also needs `git`, `tmux`, and the `amplifier` CLI on PATH — the tmux dependency is deliberate but blocks non-tmux users. If the skill or a dependency is missing, say what's needed and set it up on your go, never automatically.
 
-Each lane is its own git worktree + branch + tmux `/goal` session over a disjoint file set. Nothing launches until you approve the lane split; the orchestrating session re-runs the full suite itself after every merge and never trusts a lane's own "done."
-
-## Gotchas
-
-- A bare `/goal-batch` token does **not** load the skill. Name it in prose: "use the goal-batch skill and run this batch: …".
-- Not for bounded edits that each end in their own PR — that's `mass-change`.
-
-## Running a batch (hard-won)
-
+**Running a batch (hard-won).**
 - **Plan + a user-review gate BEFORE any lane launches.** You approve the lane split first; nothing spins up unreviewed.
 - **Keep a hand lane-manifest** — lane → worktree → branch → goal → status. It's the recovery anchor if tmux crashes and you lose the panes.
 - **Detect completion from GIT facts, not session status** — commits-since-base + clean tree + pushed. A killed pane is not "done"; session state lies.
-- **Validate ONE lane before going wide.** The tmux dependency is deliberate but blocks non-tmux users — prove a single lane runs end-to-end first.
+- **Validate ONE lane end-to-end before going wide.**
 
-## More
-
-- Requires `git`, `tmux`, and the `amplifier` CLI on PATH. Pairs with `goalify` (author the stop-conditions) and the `ten-lane-highway` concept (the steady-state practice).
+**Not this** for bounded edits that each end in their own PR — that's `mass-change`. Pairs with `goalify` (author the stop-conditions) and the `ten-lane-highway` concept (the steady-state practice).

@@ -15,20 +15,12 @@ provenance: "goalify skill"
 
 # goalify — author a stop-condition
 
-**Turn the task in front of you into something `/goal` can run to completion — a well-formed, lint-checked stop-condition.**
+You know you want to hand this off to `/goal`, but you're not sure how to word the condition so it actually holds — vague conditions either loop forever on ambiguity or wave through a shallow claim as success. **`goalify` writes the condition for you: it composes a well-formed stop-condition from what you're already doing and lint-checks it against known termination-failure patterns before you commit to a run.**
 
-## Try it now
+**In practice.** You've spent twenty minutes narrowing down what "finished" means for a refactor, and now you want it to run unattended. Rather than hand-crafting the `/goal` wording yourself, say: *"use goalify to turn this into a goal condition."* It reads the conversation, drafts the condition, flags the weak spots (no measurable end state, no transcript-visible check), and hands you something ready to run.
 
-1. `load_skill("goalify")` — then say what "done" looks like.
+**How to invoke.** `goalify` is a **skill**, so you invoke it in natural language — "use goalify to tighten this into a goal," or just "goalify this." (The slash form `/goalify` works only if your app wires skills to slash commands; the app-CLI doesn't guarantee it, so prefer the natural-language ask.)
 
-## Why it matters
+**Is it here?** Skills are per-session — check the visible skills list for `goalify`. If it's there, just ask for it in prose. If it isn't, the bundle that provides it isn't composed into this session; I can identify it and add it on your go — installing is a state change, so never automatically, always ask first.
 
-A vague goal either loops forever on ambiguity or accepts a shallow claim as success. `goalify` composes the condition from the current conversation and lints it against known termination-failure patterns before you commit to a run.
-
-## The ladder (validated)
-
-Don't jump straight to a batch. `goalify` the condition → prove it on ONE `/goal` run → retrospect on what the evaluator actually accepted → THEN scale to a `goal-batch`. A condition that hasn't survived one real run is not ready to be fanned out across lanes.
-
-## More
-
-- Pairs with `goal-batch` (run many goals as parallel lanes) and the `ten-lane-highway` concept (the steady-state practice).
+**The ladder (validated).** Don't jump straight to a batch. `goalify` the condition → prove it on ONE `/goal` run → look at what the evaluator actually accepted → THEN scale to a `goal-batch`. A condition that hasn't survived one real run isn't ready to be fanned across lanes. Pairs with `goal-batch` (run many goals as parallel lanes) and the `ten-lane-highway` concept (the steady-state practice).
