@@ -15,8 +15,8 @@ signals:
     - '\bhill[- ]?climb'
 trigger: "the user is re-running tests or builds after each AI fix (\"run it again\", pasting the errors back), hill-climbing a metric, asking for unattended or CI convergence, or wiring issue-to-fix automation on a repo"
 action: 'read_file("@wayfinder:content/practices/attractor.md")'
-verified_at: 2026-08-18
-provenance: "amplifier-bundle-attractor README + docs/ISSUE_PIPELINE.md; commands checked against the installed CLI and a live attractor-core install"
+verified_at: 2026-08-19
+provenance: "amplifier-bundle-attractor README + docs/ISSUE_PIPELINE.md; commands checked against the installed CLI and a live attractor-core install; install paths re-verified against origin/main 2026-08-19 (behaviors/attractor-core.yaml, profiles/attractor-profile-{anthropic,openai,gemini}, skills/attractorify all present)"
 ---
 
 # attractor — convergence pipelines
@@ -53,3 +53,5 @@ Three yeses → attractor. Anything less and a pipeline is the wrong tool — se
 - **Standalone CLI** (separate from the bundle): `uv tool install git+https://github.com/microsoft/amplifier-bundle-attractor@main#subdirectory=modules/pipeline-runner`, then `attractor run <graph.dot> --cwd .`, `attractor lint <graph.dot>`, and — on current `main` — `attractor resume <run-dir> --cwd .`.
 - **Copy-me exemplars** — `examples/pipelines/practical/` (bug-fix, refactor, test-gen; each ships a runnable sample) and `examples/authoring/`.
 - **On a repo** — a labelled issue can run the whole lane: it proposes a definition of done as a reviewable PR before any fix is written (`docs/ISSUE_PIPELINE.md`).
+- **Run a whole pipeline, not just the tools** — the `--app` line above adds the expert + pipeline tools to your session; to actually run provider-routed pipelines, add a profile to your config instead: `includes: [ - bundle: git+https://github.com/microsoft/amplifier-bundle-attractor@main#subdirectory=profiles/attractor-profile-anthropic ]` (or `-openai` / `-gemini`; needs the matching API key).
+- **Early-stage — pin a SHA.** No semver, high churn; if you depend on it, pin a commit SHA instead of `@main`.
