@@ -4,12 +4,12 @@ category: practice
 promoted: true
 headline: "Turn the current task into an autonomous run — author a proper /goal stop-condition."
 try_now:
-  - 'load_skill("goalify")'
+  - 'use goalify to turn this into a /goal condition'
 signals:
   prompt_matches:
     - '\b(goalify|stop[- ]?condition|turn (this|it) into (a )?goal)\b'
 trigger: "the user wants to turn the current task into an autonomous run"
-action: 'load_skill("goalify")'
+action: 'read_file("@wayfinder:content/practices/goalify.md")'
 provenance: "goalify skill"
 ---
 

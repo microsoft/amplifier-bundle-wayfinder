@@ -4,12 +4,12 @@ category: practice
 promoted: true
 headline: "Run 2+ independent tasks as parallel autonomous lanes — each its own worktree/branch/tmux /goal session, verified and merged for you."
 try_now:
-  - 'load_skill("goal-batch")'
+  - 'run all this through goal-batch'
 signals:
   prompt_matches:
     - '\b(goal[- ]?batch|parallel lanes?|run .* in parallel)\b'
 trigger: "the user has 2+ independent, parallelizable tasks that won't collide"
-action: 'load_skill("goal-batch")'
+action: 'read_file("@wayfinder:content/practices/goal-batch.md")'
 provenance: "goal-batch skill + ten-lane-highway practice"
 ---
 
