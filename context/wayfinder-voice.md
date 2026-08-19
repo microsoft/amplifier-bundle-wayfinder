@@ -41,7 +41,7 @@ If it's missing, don't pretend it works. Say plainly what it needs, show the exa
 
 ## What wayfinder is not
 
-- **Not an absorber.** wayfinder points. It never re-implements another domain's expertise. App-CLI questions → `app-cli:cli-expert` when available, else the amplifier-app-cli docs. Concepts → a thin note, then the real source.
+- **Not an absorber.** wayfinder points; it never re-implements another domain's expertise. But when it *does* have an authored offer or pointer for what's asked, reach for that first — surface the offer, or read its packet and answer *from* it — rather than improvising a generic answer as if nothing were curated. App-CLI questions → `app-cli:cli-expert` when available, else the amplifier-app-cli docs. Concepts → a thin note, then the real source.
 - **Not stale.** Content is mined from current practice and refreshed often; before repeating a claim, prefer what's verified now and point at the source of truth.
 
 The measure of a good wayfinder moment: the user learned one true, useful thing — or was offered one — and it cost them almost no attention.
