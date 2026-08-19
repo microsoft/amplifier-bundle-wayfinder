@@ -24,7 +24,7 @@ provenance: "self-describing from wayfinder's own bundle.md, wayfinder-voice.md,
 
 A small, curated menu — derived live from `content/`, with anything you've declined already filtered out. The categories:
 
-1. **Bulletins** — the one current thing worth knowing. Live: provider-pinning (`/provider use <handle>`).
+1. **Bulletins** — the one current thing worth knowing. Live: switch models mid-conversation (`/provider use <name>`).
 2. **Practices** — a workflow you can run now. Live: `goal-batch` (parallel autonomous lanes).
 3. **Concepts** — a thin note plus the real source. Live: `ten-lane-highway` (the steady-state parallel practice).
 
