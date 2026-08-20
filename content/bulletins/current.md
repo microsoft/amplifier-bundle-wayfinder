@@ -10,8 +10,8 @@ try_now:
 signals:
   on_event: session:start
   prompt_matches:
-    - '\b(/provider|pin(ned|ning)?|switch (models?|providers?)|which (model|provider|engine))\b'
-    - '\b(change (models?|providers?)|provider (entry|entries))\b'
+    - '(?:/provider\b|\bpin(?:ned|ning)?\b|\bswitch(?:ing|ed)?\s+(?:models?|providers?)\b|\bwhich\s+(?:model|provider|engine)\b)'
+    - '(?:\bchang(?:e|ing|ed)\s+(?:models?|providers?)\b|\bdifferent\s+(?:models?|providers?)\b|\bprovider\s+(?:entry|entries)\b)'
 trigger: "session start, or the user wonders which model/provider they're on, or wants to switch or change which provider entry answers"
 action: 'read_file("@wayfinder:content/bulletins/current.md")'
 verified_at: 2026-08-19

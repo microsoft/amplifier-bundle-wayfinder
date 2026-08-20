@@ -206,6 +206,16 @@ class WayfinderConfig:
     # always-full-lead behavior. The three pattern sets below are the tunable
     # heuristics; precedence is orienting -> greeting -> task -> ambiguous.
     first_touch: bool = True
+    # On the FIRST prompt, run the per-item ``prompt_matches`` check BEFORE F1
+    # classification: a signal match on the opener is user-INITIATED relevance
+    # (they asked about the offer's topic), so it must not be suppressed by the
+    # task-QUIET bucket. When true (default), a first-prompt signal summons that
+    # packet directly and skips the F1 lead entirely; the self-intro path and
+    # its defer-the-lead behavior are unaffected (self-intro items are handled
+    # by their own step). When false, turn-1 behaves exactly as before (F1 only;
+    # per-item signals still fire on later turns). Gated additionally by
+    # ``signals_enabled``.
+    first_prompt_signals: bool = True
     orienting_patterns: tuple[str, ...] = _DEFAULT_ORIENTING_PATTERNS
     greeting_patterns: tuple[str, ...] = _DEFAULT_GREETING_PATTERNS
     task_patterns: tuple[str, ...] = _DEFAULT_TASK_PATTERNS
@@ -247,6 +257,7 @@ class WayfinderConfig:
             max_hints_per_session=int(raw.get("max_hints_per_session", 3)),
             self_intro_ids=self_intro_ids,
             first_touch=bool(raw.get("first_touch", True)),
+            first_prompt_signals=bool(raw.get("first_prompt_signals", True)),
             orienting_patterns=_coerce_patterns(
                 raw.get("orienting_patterns"), _DEFAULT_ORIENTING_PATTERNS
             ),
@@ -596,6 +607,40 @@ def _build_self_intro_block(item: CatalogItem) -> str:
     )
 
 
+def _build_signal_summon_block(item: CatalogItem) -> str:
+    """Direct-summon nudge for a FIRST-PROMPT per-item signal match.
+
+    Distinct from ``_build_hint_block`` (a soft later-turn "possible fit" that
+    proposes and waits). Here the user OPENED with a prompt that matches this
+    offer's own signals \u2014 a direct, user-initiated question about the offer's
+    topic \u2014 so the right response is to read the packet and answer FROM it, the
+    same way an orienting query resolves via ``_build_self_intro_block``: for a
+    direct question, surfacing the packet IS the answer. It carries the item's
+    headline + its ``body:`` action line + explicit guidance to read on demand
+    and answer from the packet, not from memory. Reading wayfinder's own packet
+    to answer a direct question needs no propose\u2192ack gate; running any command
+    the packet lists still does.
+    """
+    read_cmd = item.action or f'read_file("{item.source_path}")'
+    action_line = f"  body: {item.action}\n" if item.action else ""
+    return (
+        f'<system-reminder source="{_SOURCE}">\n'
+        f"The user opened by asking directly about something wayfinder has a "
+        f"packet for \u2014 offer '{item.id}': {item.headline}\n"
+        f"{action_line}"
+        f"This is a direct, user-initiated question, so answer it FROM that "
+        f"packet THIS turn, in wayfinder's voice: run the packet's `body:` "
+        f"action above ({read_cmd}) to read it, then lead with a 2\u20133 line "
+        f"summary and surface its commands (commands-first) \u2014 read on demand, "
+        f"do NOT answer from memory. Reading wayfinder's own packet to answer a "
+        f"direct question IS the answer, so no propose\u2192ack gate on the read "
+        f"itself; running any command the packet lists still needs an explicit "
+        f"ack \u2014 show the exact command and wait. Single nudge; never act "
+        f"unattended.\n"
+        f"</system-reminder>"
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Hook handlers
 # --------------------------------------------------------------------------- #
@@ -849,12 +894,22 @@ class WayfinderHooks:
                 )
             return HookResult(action="continue")
 
-        # First prompt of the session. Check for a self-intro signal FIRST
-        # (identity-orienting query): if one fires, deliver the directive
-        # self-intro nudge and DEFER the lead — we deliberately do not mark the
-        # session surfaced, so the lead still lands on the next prompt. This is
-        # unchanged.
+        # First prompt of the session. Turn-1 precedence:
+        #   menu (F3, above) > per-item signal match > self-intro > F1.
         if session_id not in self._surfaced:
+            # Per-item signal match (Defect B): a prompt_matches hit on the
+            # opener is user-initiated relevance, so it must not be swallowed by
+            # F1's task-QUIET bucket. Summons the packet directly and skips the
+            # F1 lead. Self-intro items are excluded here (handled just below,
+            # keeping their defer-the-lead behavior).
+            signal_hit = self._first_prompt_signal(session_id, prompt, catalog)
+            if signal_hit is not None:
+                return signal_hit
+
+            # Self-intro signal (identity-orienting query): if one fires, deliver
+            # the directive self-intro nudge and DEFER the lead — we deliberately
+            # do not mark the session surfaced, so the lead still lands on the
+            # next prompt. This is unchanged.
             self_intro = self._match_self_intro(session_id, prompt, catalog)
             if self_intro is not None:
                 self._record_hint(session_id, self_intro)
@@ -948,6 +1003,50 @@ class WayfinderHooks:
                 continue
             if any(p.search(prompt) for p in item.prompt_patterns):
                 return item
+        return None
+
+    def _first_prompt_signal(
+        self, session_id: str, prompt: str, catalog: SessionCatalog
+    ) -> HookResult | None:
+        """Turn-1 per-item signal match (non-self-intro items) — Defect B fix.
+
+        A ``prompt_matches`` hit on the FIRST prompt is user-INITIATED relevance
+        (the user opened asking about an offer's topic), so it must not be
+        suppressed by F1's task-QUIET bucket. On a match: summon that packet
+        directly (read it, answer FROM it) and mark the session's first touch
+        handled, so the F1 lead is skipped entirely. Self-intro items are
+        intentionally excluded here — the dedicated self-intro step handles them
+        and keeps its defer-the-lead behavior. The mechanism mirrors
+        ``_maybe_hint``: gated by ``signals_enabled``, decline-filtered, respects
+        the once-per-session hinted set and the hint cap, records the hint, and
+        records NOTHING to the rotation/surfaced seen-memory (same as a later
+        ``_maybe_hint`` summon). Additionally gated by ``first_prompt_signals``.
+        Returns None when disabled or when no non-self-intro item matches, so the
+        caller falls through to the self-intro check and F1 classification.
+        """
+        if not (self.config.signals_enabled and self.config.first_prompt_signals):
+            return None
+        if self._hint_counts.get(session_id, 0) >= self.config.max_hints_per_session:
+            return None
+        hinted = self._hinted.setdefault(session_id, set())
+        for item in catalog.items.values():
+            if self._is_self_intro(item):
+                continue
+            if item.id in catalog.declined_ids or item.id in hinted:
+                continue
+            if not item.prompt_patterns:
+                continue
+            if any(p.search(prompt) for p in item.prompt_patterns):
+                self._record_hint(session_id, item)
+                # First touch handled → later turns take the normal signal path;
+                # the F1 lead is skipped entirely (never deferred to turn 2).
+                self._surfaced.add(session_id)
+                return HookResult(
+                    action="inject_context",
+                    context_injection=_build_signal_summon_block(item),
+                    context_injection_role="system",
+                    ephemeral=True,
+                )
         return None
 
     def _maybe_hint(
@@ -1134,6 +1233,7 @@ async def mount(
             "max_hints_per_session": wf_config.max_hints_per_session,
             "self_intro_ids": list(wf_config.self_intro_ids),
             "first_touch": wf_config.first_touch,
+            "first_prompt_signals": wf_config.first_prompt_signals,
             "orienting_patterns": list(wf_config.orienting_patterns),
             "greeting_patterns": list(wf_config.greeting_patterns),
             "task_patterns": list(wf_config.task_patterns),
