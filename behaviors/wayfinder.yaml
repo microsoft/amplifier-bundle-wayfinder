@@ -3,17 +3,19 @@ bundle:
   version: 0.2.0
   description: Wires wayfinder's channel — voice, propose-and-ack protocol, a thin derived-catalog note, and the hooks-wayfinder hook (session:start bulletin surfacing + frontmatter-derived catalog + deterministic decline-filter + one conservative prompt-signal).
 
-# Always-on files. Kept small on purpose (~1.1–1.6K tokens total, each < 500).
-# The FULL offer catalog is no longer always-on: hooks-wayfinder derives it from
-# per-item frontmatter and injects a compact index EPHEMERALLY on the first
-# prompt. offer-catalog.md is now just a thin note explaining that.
-# Bulletin BODIES stay on-demand — the hook surfaces the headline + Try-it-now
-# commands; the agent reads content/bulletins/current.md on demand for the rest.
+# Always-on files — deliberately just two, both pure every-turn material:
+#   wayfinder-voice.md   — the one-voice register + points-not-absorb boundary
+#   propose-and-ack.md   — the consent floor (propose→show→ack→act)
+# The offer catalog and the "bodies come from action, never glob" rule are NOT
+# always-on: hooks-wayfinder DERIVES the catalog from per-item frontmatter and
+# injects it — with that action-delivery directive — EPHEMERALLY, per surface.
+# Offer-time / authoring procedure (packet shape, invocation + install detail)
+# lives on-demand in the wayfinder-pack skill. Bulletin BODIES stay on-demand via
+# each packet's own `action`.
 context:
   include:
     - wayfinder:context/wayfinder-voice.md
     - wayfinder:context/propose-and-ack.md
-    - wayfinder:context/offer-catalog.md
 
 # Authoring skill: how to write a good wayfinder packet. Loaded on demand
 # (visibility ~1 line; body only when invoked), so it costs nothing until a

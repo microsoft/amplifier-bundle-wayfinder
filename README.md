@@ -15,7 +15,7 @@ Always-on content (kept deliberately small, ~1.6K tokens total):
 
 - `context/wayfinder-voice.md` — the one-voice principle
 - `context/propose-and-ack.md` — the propose→show→ack→act protocol + guardrails
-- `context/offer-catalog.md` — the curated trigger→offer→action index
+- (the offer catalog is derived by `hooks-wayfinder` from packet frontmatter and injected per-surface — not an always-on file)
 - `content/bulletins/current.md` — the current authored bulletin (Brian edits this)
 
 On-demand (soft-referenced, not always loaded):

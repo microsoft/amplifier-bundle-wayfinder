@@ -25,7 +25,7 @@ loosen it. This governs everything under `content/` and `context/`.
 | Path | What it is | When it loads |
 |------|-----------|---------------|
 | `content/bulletins/`, `content/practices/`, `content/concepts/` | Packets (offers). Frontmatter + authored body. | Body on-demand via each packet's `action`; catalog derived from frontmatter |
-| `context/wayfinder-voice.md`, `context/propose-and-ack.md`, `context/offer-catalog.md` | Always-on channel (voice, protocol, thin catalog note) | Every session — keep each < 500 tokens |
+| `context/wayfinder-voice.md`, `context/propose-and-ack.md` | Always-on channel (voice register + consent floor) — just two files | Every session — keep the pair lean; each < 1000 tok, and prefer smaller |
 | `modules/hooks-wayfinder/` | The hook: session:start surfacing, frontmatter-derived catalog, decline-filter, prompt signals | Session lifetime |
 | `behaviors/wayfinder.yaml` | Wires context + hook + the authoring skill | Composition |
 | `skills/wayfinder-pack/` | The authoring skill — how to write a good packet | On demand (`/wayfinder-pack`) |
