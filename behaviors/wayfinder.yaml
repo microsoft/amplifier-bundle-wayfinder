@@ -15,6 +15,15 @@ context:
     - wayfinder:context/propose-and-ack.md
     - wayfinder:context/offer-catalog.md
 
+# Authoring skill: how to write a good wayfinder packet. Loaded on demand
+# (visibility ~1 line; body only when invoked), so it costs nothing until a
+# contributor reaches for it. Sourced via tool-skills config, not context.
+tools:
+  - module: tool-skills
+    config:
+      skills:
+        - "@wayfinder:skills"
+
 # Ring 1: wayfinder's first Python. Deterministic, ephemeral, config-tunable.
 hooks:
   - module: hooks-wayfinder
