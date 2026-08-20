@@ -1,28 +1,28 @@
-// Wayfinder is an Amplifier add-on that notices what you're working on and offers the right tool, command, or workflow at the moment you'd benefit from it.
+// Wayfinder is an Amplifier add-on that notices what you're working on and offers relevant tips, tools, and shortcuts — always asking before it acts.
 digraph wayfinder {
     rankdir=LR
     fontname="Helvetica"
     fontsize=12
-    label="Wayfinder v0.1.0 — bundle repo\nSuggests the right Amplifier tool or command at the right moment"
+    label="Wayfinder v0.1.0\nAn add-on that surfaces helpful tips and shortcuts while you work"
     labelloc=t
     labeljust=c
     nodesep=0.6
     ranksep=0.7
     bgcolor="white"
-    source_hash="e686cecf738d25d69beb2015d43be181ed2ec23d92677c2cc8165c98bd6f9f58"
+    source_hash="67113c69d837dc6c6e8e61ea4911631b4cb0100696ac3a0332414c0d6e0aad34"
 
     node [fontname="Helvetica", fontsize=11, style="filled,rounded"]
     edge [fontname="Helvetica", fontsize=9]
 
-    root_wayfinder [label="Wayfinder (the whole add-on)\nv0.1.0 · 0 tools · 0 agents\n~334 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
+    root_wayfinder [label="Wayfinder v0.1.0\nThe add-on itself\n0 tools · 0 agents\n~334 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
 
     subgraph cluster_behaviors {
-        label="What Wayfinder Does"
+        label="What It Does"
         style="filled"
         fillcolor="#f9f9f9"
         color="#999999"
 
-        beh_wayfinder_behavior [label="Spot the moment, make the offer\n2 tools · 3 ctx\n~1939 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
+        beh_wayfinder_behavior [label="Spot the moment, offer the tip\n2 tools · 2 ctx\n~1603 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
     }
 
     subgraph cluster_modules {
@@ -31,22 +31,21 @@ digraph wayfinder {
         fillcolor="#f9f9f9"
         color="#999999"
 
-        mod_hooks_wayfinder [label="Watches your session\nand decides when to speak up\n(hooks-wayfinder)", shape=box, fillcolor="#bbdefb", style="filled,rounded"]
+        mod_hooks_wayfinder [label="Timing watcher\nDecides when a tip is worth showing\n(hooks-wayfinder)", shape=box, fillcolor="#bbdefb", style="filled,rounded"]
     }
 
     subgraph cluster_context {
-        label="Written Guidance (how it speaks and what it offers)"
+        label="Written Guidance (read as needed)"
         style="filled"
         fillcolor="#f9f9f9"
         color="#999999"
 
-        ctx_wayfinder_voice_md [label="How to say it: short, useful,\nnever pushy (wayfinder-voice.md)\n~615 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
-        ctx_propose_and_ack_md [label="Always ask first, remember a no\n(propose-and-ack.md)\n~399 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
-        ctx_offer_catalog_md [label="The menu of things\nit can suggest (offer-catalog.md)\n~315 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_wayfinder_voice_md [label="How to phrase a tip\nwayfinder-voice.md\n~615 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_propose_and_ack_md [label="Always ask before acting\npropose-and-ack.md\n~399 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
     }
 
     subgraph cluster_legend {
-        label="Legend"
+        label="Legend — what each color means"
         style="filled"
         fillcolor="white"
         color="#cccccc"
@@ -64,14 +63,13 @@ digraph wayfinder {
         leg_ext_muted [label="borrowed, free", shape=box, fillcolor="#f5f5f5", style="dashed", fontsize=9]
     }
 
-    disclaimer [label="Token estimates: ~4 chars/token\nSolid border = part of this repo (counted)\nDashed + red = borrowed from elsewhere, adds hidden cost (not counted)\nDashed + muted = borrowed from elsewhere, no cost\nExcludes: sub-session costs, runtime-dynamic", shape=note, fillcolor="#eceff1", style="filled", fontsize=9]
+    disclaimer [label="\"tok\" = tokens, the units of text the AI reads (~4 characters each)\nSolid border = part of this repo (cost counted here)\nDashed + red = borrowed from elsewhere, adds hidden cost\nDashed + muted = borrowed from elsewhere, no cost\nNot counted: work done in side sessions, anything decided at runtime", shape=note, fillcolor="#eceff1", style="filled", fontsize=9]
 
-    ext_githttps___github_com_microsoft_amplifier_foundation_main [label="Amplifier Foundation\nshared groundwork it builds on\n(external, cost)", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2]
+    ext_githttps___github_com_microsoft_amplifier_foundation_main [label="Amplifier Foundation\nShared building blocks\n(borrowed, adds cost)", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2]
 
     root_wayfinder -> ext_githttps___github_com_microsoft_amplifier_foundation_main [style=dashed]
     root_wayfinder -> beh_wayfinder_behavior [label="composes"]
     beh_wayfinder_behavior -> mod_hooks_wayfinder [label="uses", penwidth=0.8]
     beh_wayfinder_behavior -> ctx_wayfinder_voice_md [style=dotted, color=purple]
     beh_wayfinder_behavior -> ctx_propose_and_ack_md [style=dotted, color=purple]
-    beh_wayfinder_behavior -> ctx_offer_catalog_md [style=dotted, color=purple]
 }
