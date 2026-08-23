@@ -18,7 +18,7 @@ provenance: "self-describing from wayfinder's own bundle.md, wayfinder-voice.md,
 
 # About wayfinder
 
-**wayfinder is an authored awareness + propose-and-ack steering channel: it points you to the workflow, tool, or bundle that fits â€” it never does the work itself.** It surfaces the offer, shows the exact command, and you decide. It points; it never absorbs.
+**wayfinder is an authored awareness + propose-and-ack steering channel: it points you to the workflow, tool, or bundle that fits rather than absorbing that capability.** Direct requests proceed in scope without duplicate Wayfinder ack. Optional Wayfinder suggestions show the exact action and wait for explicit ack. Native host, tool, safety, and destructive-action approvals still apply.
 
 ## What it helps with
 
@@ -32,8 +32,9 @@ Pro-tips ride the same rails when there are any. The menu is small on purpose â€
 
 ## How to use it
 
-- **Offers are ack-gated.** Say "yes" / "go" to run the shown command; ignore it and nothing happens. Nothing runs unattended.
-- **Say "no" once.** A declined offer is remembered and never re-offered.
+- **Direct requests are not offers.** If you explicitly ask to run or install a matching capability, that request authorizes the in-scope action without another Wayfinder ack.
+- **Optional offers are ack-gated.** Wayfinder shows the exact action and waits for "yes" / "go"; ignore it and nothing happens.
+- **Declines distinguish later from never.** "Not now/later" writes nothing and may resurface. A hard "not interested/stop/never" is remembered without asking again and is not re-offered.
 - **Ask anytime.** "what can you help with?" re-surfaces the menu.
 
 ## More

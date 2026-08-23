@@ -27,7 +27,7 @@ You want to know how a real user would hit your app before you ship — the conf
 
 Then `init --dir my-round`, rewrite the persona briefs for *your* product, and `run --config my-round/project.yaml`. Or just ask a session: *"install and run microsoft/amplifier-app-simulated-user-research and report the findings."*
 
-**Install — a separate standalone app, ask-first.** It's not a built-in or a bundle; it's its own CLI installed via `uv tool`. Check whether it's already here with `which amplifier-simulated-user-research` (or run its `doctor`); if it's missing, the `uv tool install` above adds it. That's a state change — confirm before running it.
+**Install — a separate standalone app.** It's not a built-in or a bundle; it's its own CLI installed via `uv tool`. Check whether it's already here with `which amplifier-simulated-user-research` (or run its `doctor`); if it's missing, the `uv tool install` above adds it. An explicit request to install or run it authorizes that in-scope action without duplicate Wayfinder ack; native host, tool, safety, and destructive-action approvals still apply. If Wayfinder suggests installation or a research run as an optional next step, show the exact action and wait for explicit ack; never act unsolicited.
 
 It's the SIMULATED (persona) half of a two-sided review. Pair it with reality-check — the OBSERVED, machine-checked half — and a product-council for UX calls: the councils rank and reason, this supplies persona sessions with repro steps.
 

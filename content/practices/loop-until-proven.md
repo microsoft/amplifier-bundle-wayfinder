@@ -36,9 +36,11 @@ Ever watched an agent announce "all fixed!" on a suite that's still red — then
 
 Three yeses → attractor. Anything less and a pipeline is the wrong tool.
 
-**How to run it.** Both are skills from the attractor bundle, so both are per-session — check your visible skills list first. If they aren't there, this is the command, and I'll wait for your go rather than run it for you:
+**How to run it.** Both are skills from the attractor bundle, so both are per-session — check your visible skills list first. If they aren't there, use this command:
 
 `amplifier bundle add git+https://github.com/microsoft/amplifier-bundle-attractor@main --app`
+
+An explicit request to install the bundle or run one of these skills authorizes that in-scope action without duplicate Wayfinder ack; native host, tool, safety, and destructive-action approvals still apply. If Wayfinder introduces installation or skill use as an optional next step, show the exact action and wait for explicit ack; never act unsolicited.
 
 That's the bundle's **root**, which is what registers `skills/` — the narrower `behaviors/attractor-core.yaml` install adds the expert agent, tools and hooks but **not** the skills. Invoke in natural language (*"use attractor-scout on my sessions"*, *"use attractorify on this"*); the slash forms work only if your app wires skills to commands, which the app-CLI doesn't guarantee — so prefer the ask.
 

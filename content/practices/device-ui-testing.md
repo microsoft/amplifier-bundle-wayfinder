@@ -22,7 +22,7 @@ Your UI fix passes the unit tests. `curl` against the server comes back clean. A
 
 **How to invoke:** delegate through the bundle's `android-*` / `ios-*` agents — don't drive `adb`/`simctl` by hand. The agents carry the selector-first discipline; raw shell driving throws it away.
 
-**Install — two separate bundles, ask-first.** Neither is built in. Check what's present with `amplifier bundle list`; if `android-tester` / `ios-tester` aren't there, add the one(s) you need. Installing is a state change, so confirm before running:
+**Install — two separate bundles.** Neither is built in. Check what's present with `amplifier bundle list`; if `android-tester` / `ios-tester` aren't there, add the one(s) you need. An explicit request to install or run a tester authorizes that in-scope action without duplicate Wayfinder ack; native host, tool, safety, and destructive-action approvals still apply. If Wayfinder introduces installation or testing as an optional next step, show the exact action and wait for explicit ack; never act unsolicited.
 
 - `amplifier bundle add git+https://github.com/microsoft/amplifier-bundle-android-tester@main#subdirectory=behaviors/android-tester.yaml --app`
 - `amplifier bundle add git+https://github.com/microsoft/amplifier-bundle-ios-tester@main#subdirectory=behaviors/ios-tester.yaml --app`

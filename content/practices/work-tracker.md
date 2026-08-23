@@ -27,7 +27,7 @@ Two parallel sessions quietly redoing each other's work — and the half-finishe
 2. `amplifier-work-tracker add --project my_project "Fix flaky auth test"` — file an item (`--description`, `--acceptance` optional).
 3. `amplifier-work-tracker claim --project my_project --actor me` — claim the next ready item (or `--id <id>` for a specific one).
 
-**What it needs.** This one isn't built-in — it's a separate CLI plus a background service (a shared dolt server + reap/notify sweep loops). Confirm it's present in this session before offering commands: `amplifier-work-tracker doctor` checks the CLI's assumptions against the live binary (`which amplifier-work-tracker` is a quick presence check; the `work_tracker_status` tool reports the same if your session has it). If it's missing, installing or starting the service is a state change — say what's needed and get a go first, never automatically.
+**What it needs.** This one isn't built-in — it's a separate CLI plus a background service (a shared dolt server + reap/notify sweep loops). Confirm it's present in this session before offering commands: `amplifier-work-tracker doctor` checks the CLI's assumptions against the live binary (`which amplifier-work-tracker` is a quick presence check; the `work_tracker_status` tool reports the same if your session has it). An explicit request to install, start, or use it authorizes that in-scope action without duplicate Wayfinder ack; native host, tool, safety, and destructive-action approvals still apply. If Wayfinder introduces setup or use as an optional next step, show the exact action and wait for explicit ack; never act unsolicited.
 
 **Gotchas.**
 - **No create-project op beyond `new`.** Run `new` first; `add` won't conjure a missing project.
