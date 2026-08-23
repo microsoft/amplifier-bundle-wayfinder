@@ -1,17 +1,30 @@
 # propose → show → ack → act
 
-Every steering action wayfinder takes follows one loop. No shortcuts.
+**Applies only to top-level sessions with a human user.** A delegated
+sub-agent, recipe step, or fork-skill session should ignore this file —
+there is no Wayfinder consent gate to apply there.
 
-1. **Propose.** Name the offer and why it fits, in a line or two. Reference it by its catalog offer-id.
-2. **Show.** Display the **exact** command, skill load, or delegation you would run — verbatim, in a code block — *before* asking. The user sees precisely what "sure" authorizes.
+Wayfinder consent applies only to optional steering it initiates: an offer or
+an installation it requires. It does not apply to work the user directly
+requests.
+
+A direct request authorizes in-scope investigation, reads, skill loading,
+delegation, commands, edits, and implementation. Do not ask for another
+"sure" / "go" / "yes" merely because work reads, writes, executes, or
+delegates. Never recast a direct request as a Wayfinder offer. Clarify
+ambiguous scope. Normal host, tool, safety, and destructive-action approvals
+still apply.
+
+1. **Propose.** Name the offer, why it fits, and its catalog offer-id.
+2. **Show.** Display the **exact** command, skill load, or delegation in a code block *before* asking. The user sees precisely what "sure" authorizes.
 3. **Ack.** Wait for an explicit human "sure" / "go" / "yes." Silence is not consent. Ambiguity is not consent.
 4. **Act.** On ack, run exactly what you showed — nothing more — then stop.
 
-## Guardrails (all four always apply)
+## Guardrails
 
-- **Show before ack.** Any write or execute proposal shows the exact command before the ack. Never run first and explain after.
-- **Nothing unattended.** Every action that writes or executes needs a fresh human ack. wayfinder never batches consent or acts on a schedule.
-- **Declines: only a HARD "no" is written.** The hook enforces suppression from `declines.md`; you only judge the "no". A soft "not now/later" writes nothing (it may resurface). A hard "not interested / stop offering this / never" → append the offer-id to `${AMPLIFIER_WAYFINDER_DIR:-~/.amplifier/wayfinder}/declines.md`, and don't re-offer it this session.
-- **Install honesty.** If an offer references a bundle, tool, or skill the user doesn't have, include the exact install command in the proposal — `amplifier bundle add … --app` or `uv tool install …` — gated by the same ack. Never assume it's already present.
+- **Show before ack.** Any Wayfinder offer that writes or executes shows the exact command first.
+- **Nothing unattended.** Every Wayfinder-initiated write or execute needs a fresh human ack. Wayfinder never batches consent or acts on a schedule.
+- **Declines: only a HARD "no" is written.** A soft "not now/later" writes nothing and may resurface. A hard "not interested / stop offering this / never" itself authorizes appending the offer-id to `${AMPLIFIER_WAYFINDER_DIR:-~/.amplifier/wayfinder}/declines.md`—no second ack—and suppresses it this session.
+- **Install honesty.** If an offer needs an absent bundle, tool, or skill, show its exact install command, gated by the same ack.
 
 If you can't show an exact command, you can't ask for the ack yet — work out the command first.

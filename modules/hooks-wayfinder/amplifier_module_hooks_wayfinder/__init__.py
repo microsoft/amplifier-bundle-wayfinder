@@ -40,8 +40,9 @@ genuinely "fires at session start"), and the first ``prompt:submit`` delivers
 the assembled packet ephemerally. Net: fires at session start, surfaces once,
 never persists.
 
-The WRITE of a new decline stays agent-mediated (the propose→ack protocol). This
-hook never writes the decline file.
+The WRITE of a new decline stays agent-mediated. A hard explicit decline itself
+authorizes recording; a soft decline writes nothing. This hook never writes the
+decline file.
 """
 
 from __future__ import annotations
@@ -61,6 +62,11 @@ from amplifier_core import HookResult
 logger = logging.getLogger(__name__)
 
 _SOURCE = "hooks-wayfinder"
+
+# Sentinel: distinguishes "key absent from event payload" from an explicit
+# ``None`` value (``parent_id`` for a genuine root session IS ``None``). See
+# ``WayfinderHooks._is_root``.
+_MISSING = object()
 
 
 # --------------------------------------------------------------------------- #
@@ -166,6 +172,11 @@ class WayfinderConfig:
     """All knobs are tunable via the hook's ``config:`` in the behavior YAML."""
 
     enabled: bool = True
+    # Restrict all wayfinder behavior to top-level (human) sessions. Sub-agents,
+    # recipe steps, and fork-skill sessions all carry a non-None parent_id and
+    # are unconditionally skipped when true (default). See
+    # ``WayfinderHooks._is_root`` for the fail-safe-silent semantics.
+    root_only: bool = True
     # Own-dir override. Scalar, back-compat, now @-aware (accepts an @ns:path or
     # a literal filesystem path). When set it OVERRIDES the implicit
     # auto-detected own-dir (<bundle>/content). When unset the own-dir is
@@ -247,6 +258,7 @@ class WayfinderConfig:
             content_sources = {}
         return cls(
             enabled=bool(raw.get("enabled", True)),
+            root_only=bool(raw.get("root_only", True)),
             content_dir=raw.get("content_dir") or None,
             content_sources=content_sources,
             declines_path=raw.get("declines_path") or None,
@@ -521,7 +533,9 @@ def _build_index_block(catalog: SessionCatalog) -> str:
         f'<system-reminder source="{_SOURCE}">',
         (
             "wayfinder — offer catalog for this session (DERIVED from content "
-            "frontmatter; declined offers already filtered out). Surface anything "
+            "frontmatter; declined offers already filtered out). A direct user "
+            "request matching an item authorizes ordinary in-scope work without a "
+            "duplicate Wayfinder ack. Surface unsolicited optional suggestions "
             "below ONLY via propose→show→ack→act, one at a time, in wayfinder's voice."
         ),
         (
@@ -570,10 +584,14 @@ def _build_hint_block(item: CatalogItem) -> str:
         f'<system-reminder source="{_SOURCE}">\n'
         f"Possible fit: the user's message may relate to wayfinder offer "
         f"'{item.id}' — {item.headline}\n"
-        f"If it genuinely fits, PROPOSE it via propose→show→ack→act — show the "
-        f"exact command{cmd}, then wait for an explicit ack. This is a single "
-        f"nudge: do not repeat it, and never act unattended. If it doesn't fit, "
-        f"ignore this.\n"
+        f"First distinguish a direct request from optional relevance. If the user "
+        f"directly requested work this capability can fulfill, use its curated "
+        f"source and carry out the in-scope request without a "
+        f"duplicate Wayfinder ack; normal host/tool/safety/destructive approvals "
+        f"still apply. If the message merely makes this an optional useful next "
+        f"step, PROPOSE it via propose→show→ack→act — show the exact action{cmd}, "
+        f"then wait for an explicit ack. Single nudge; never act on an unsolicited "
+        f"suggestion unattended. If it doesn't fit, ignore this.\n"
         f"</system-reminder>"
     )
 
@@ -601,8 +619,11 @@ def _build_self_intro_block(item: CatalogItem) -> str:
         f"summary of what wayfinder is and the small curated menu it can point "
         f"you to (commands-first); read the file on demand rather than pasting "
         f"it whole. Prioritise this over the session-start bulletin this turn — "
-        f"the bulletin can wait. The offers named in the overview stay ack-gated: "
-        f"surface, don't run anything unattended.\n"
+        f"the bulletin can wait. Offers named in the overview remain optional and "
+        f"ack-gated unless the user directly requests one; then fulfill that "
+        f"in-scope request without a duplicate Wayfinder ack. Normal "
+        f"host/tool/safety/destructive approvals still apply. Never run an "
+        f"unsolicited suggestion unattended.\n"
         f"</system-reminder>"
     )
 
@@ -610,33 +631,33 @@ def _build_self_intro_block(item: CatalogItem) -> str:
 def _build_signal_summon_block(item: CatalogItem) -> str:
     """Direct-summon nudge for a FIRST-PROMPT per-item signal match.
 
-    Distinct from ``_build_hint_block`` (a soft later-turn "possible fit" that
-    proposes and waits). Here the user OPENED with a prompt that matches this
-    offer's own signals \u2014 a direct, user-initiated question about the offer's
-    topic \u2014 so the right response is to read the packet and answer FROM it, the
-    same way an orienting query resolves via ``_build_self_intro_block``: for a
-    direct question, surfacing the packet IS the answer. It carries the item's
-    headline + its ``body:`` action line + explicit guidance to read on demand
-    and answer from the packet, not from memory. Reading wayfinder's own packet
-    to answer a direct question needs no propose\u2192ack gate; running any command
-    the packet lists still does.
+    A signal match establishes relevance and authorizes reading the packet, not
+    executing a capability. The emitted instruction tells the model to inspect
+    the original prompt: an explicit matching action request authorizes that
+    in-scope action without duplicate Wayfinder ack, while a merely topical,
+    relevance, or information prompt authorizes only the packet read and answer.
+    Optional actions remain offer-gated.
     """
     read_cmd = item.action or f'read_file("{item.source_path}")'
     action_line = f"  body: {item.action}\n" if item.action else ""
     return (
         f'<system-reminder source="{_SOURCE}">\n'
-        f"The user opened by asking directly about something wayfinder has a "
-        f"packet for \u2014 offer '{item.id}': {item.headline}\n"
+        f"The user's opening matched a topic wayfinder has "
+        f"a packet for \u2014 offer '{item.id}': {item.headline}\n"
         f"{action_line}"
-        f"This is a direct, user-initiated question, so answer it FROM that "
-        f"packet THIS turn, in wayfinder's voice: run the packet's `body:` "
-        f"action above ({read_cmd}) to read it, then lead with a 2\u20133 line "
-        f"summary and surface its commands (commands-first) \u2014 read on demand, "
-        f"do NOT answer from memory. Reading wayfinder's own packet to answer a "
-        f"direct question IS the answer, so no propose\u2192ack gate on the read "
-        f"itself; running any command the packet lists still needs an explicit "
-        f"ack \u2014 show the exact command and wait. Single nudge; never act "
-        f"unattended.\n"
+        f"A signal match establishes relevance only. It authorizes running the "
+        f"packet's `body:` action above ({read_cmd}) to read the packet; it does "
+        f"NOT by itself authorize any command, skill, installation, edit, or "
+        f"other action described inside. Classify the user's actual request:\n"
+        f"- If the user explicitly requested the matching action (for example, "
+        f"install, run, use, execute, edit, or implement it), carry out that "
+        f"in-scope request without a duplicate Wayfinder ack. Normal "
+        f"host/tool/safety/destructive approvals still apply.\n"
+        f"- If the prompt is merely topical, relevance-seeking, or informational "
+        f"(for example, what/how/whether it fits), read and answer from the packet "
+        f"only. Any action or install is then an optional Wayfinder offer: show "
+        f"the exact action and wait for explicit ack. Never act on relevance "
+        f"alone or on an unsolicited suggestion unattended.\n"
         f"</system-reminder>"
     )
 
@@ -656,11 +677,43 @@ class WayfinderHooks:
         self._hinted: dict[str, set[str]] = {}
         self._hint_counts: dict[str, int] = {}
         self._source_cache: dict[str, Path] = {}
+        # Root-only gate memoization (see _is_root): per-session cached verdict,
+        # plus a one-time warning flag so a missing parent_id on every event
+        # doesn't spam the log across a whole session.
+        self._is_root_cache: dict[str, bool] = {}
+        self._warned_no_parent_id: bool = False
         # Compile the first-touch (F1) + menu (F3) classifier sets once at mount.
         self._orienting_re = _compile_patterns(list(config.orienting_patterns))
         self._greeting_re = _compile_patterns(list(config.greeting_patterns))
         self._task_re = _compile_patterns(list(config.task_patterns))
         self._menu_re = _compile_patterns(list(config.menu_patterns))
+
+    # -- root-only gate -------------------------------------------------------- #
+    def _is_root(self, session_id: str, data: dict[str, Any]) -> bool:
+        """True only for a top-level session (no parent). Memoized per session.
+
+        parent_id rides on every event via the kernel's set_default_fields.
+        Absent key == cannot determine == treat as a sub-session (fail-safe
+        silent): under-surfacing to a human is cheap; leaking into a sub-agent
+        is the defect this gate exists to prevent.
+        """
+        cached = self._is_root_cache.get(session_id)
+        if cached is not None:
+            return cached
+        parent = data.get("parent_id", _MISSING)
+        if parent is _MISSING:
+            if not self._warned_no_parent_id:
+                logger.warning(
+                    "%s: no parent_id on event payload; treating session as a "
+                    "sub-session and staying silent (set root_only: false to override)",
+                    _SOURCE,
+                )
+                self._warned_no_parent_id = True
+            is_root = False
+        else:
+            is_root = parent is None
+        self._is_root_cache[session_id] = is_root
+        return is_root
 
     # -- path / source resolution -------------------------------------------- #
     def _resolve_mention(self, value: str) -> Path | None:
@@ -859,6 +912,8 @@ class WayfinderHooks:
         if not self.config.enabled:
             return HookResult(action="continue")
         session_id = data.get("session_id") or "default"
+        if self.config.root_only and not self._is_root(session_id, data):
+            return HookResult(action="continue")
         try:
             self._assemble(session_id)
         except Exception:  # never wedge a session on assembly failure
@@ -869,6 +924,8 @@ class WayfinderHooks:
         if not self.config.enabled:
             return HookResult(action="continue")
         session_id = data.get("session_id") or "default"
+        if self.config.root_only and not self._is_root(session_id, data):
+            return HookResult(action="continue")
         prompt = data.get("prompt") or ""
 
         try:
@@ -1162,8 +1219,10 @@ class WayfinderHooks:
                 "The user asked what else is available \u2014 surface the FULL "
                 "current wayfinder menu (declined offers already filtered out), "
                 "in wayfinder's voice, as a compact list. Showing the list IS "
-                "the answer, so no propose\u2192ack gate on the list itself; opening "
-                "any packet still needs an explicit ack."
+                "the answer, so no propose\u2192ack gate applies. Do not open or act "
+                "on a merely listed item; that would be an optional offer needing "
+                "an explicit ack. If the user directly asks to open or use an item, "
+                "fulfill that in-scope request without a duplicate Wayfinder ack."
             ),
             (
                 "To open any packet, run its `body:` action EXACTLY as written "
@@ -1223,6 +1282,7 @@ async def mount(
         "description": "Wayfinder Ring 1 hook: derived catalog, decline-filter, signal nudge.",
         "config": {
             "enabled": wf_config.enabled,
+            "root_only": wf_config.root_only,
             "content_dir": wf_config.content_dir or "<auto>",
             "content_sources": dict(wf_config.content_sources),
             "declines_path": wf_config.declines_path or "<env/HOME default>",

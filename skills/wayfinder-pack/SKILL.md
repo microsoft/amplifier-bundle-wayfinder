@@ -143,9 +143,12 @@ app-CLI; **skills are invoked in natural language** ("use goalify to …"), with
 the slash form working *only if the app wires it* — prefer the NL form. A
 separate bundle must be installed first.
 
-**Install-awareness**: state plainly what the packet needs, and if it is not
-built-in, that installing is **ask-first, never automatic** — show the command,
-wait for the user's go.
+**Consent-awareness**: state plainly what the packet needs and distinguish a
+request from an offer. An explicit user request to install or run the matching
+capability authorizes that in-scope action without a duplicate Wayfinder ack;
+native host, tool, safety, and destructive-action approvals still apply. If
+Wayfinder introduces installation or execution as an optional next step, show
+the exact action and wait for the user's go; never act unsolicited.
 
 **Success criteria**: The body opens with a pain the reader recognizes, shows an
 example before the how-to, carries only verified commands, is honest about what
@@ -155,6 +158,12 @@ must be installed, and reads like one person talking — not a filled-in templat
 
 `prompt_matches` is what lets a packet answer a directly-relevant question. Two
 lessons from real misses:
+
+- **A match establishes relevance, not execution consent.** It authorizes
+  reading the packet. If the prompt explicitly requests the matching action,
+  fulfill it without duplicate Wayfinder ack. If it is merely topical or asks
+  for information, answer from the packet; any optional action remains
+  propose→show→ack→act.
 
 - **Cover the verb stems.** `switch (models?)` does NOT match "switch**ing**
   models." Use stems: `switch(?:ing|ed)?\s+(?:models?|providers?)`.
@@ -218,5 +227,7 @@ guessed file search), its signals fire, and the user has confirmed the voice.
 - **Unverified commands** that ship wrong, or **guessed** skill/bundle syntax.
 - **A body only findable by globbing** — always route delivery through `action`.
 - **Signals that miss real phrasing** (verb-stem gaps) or over-match.
-- **Silent auto-install** — installing anything is always ask-first.
+- **Consent collapse** — never treat topical signal relevance as permission to
+  execute, never auto-install an unsolicited offer, and never demand duplicate
+  Wayfinder ack for an explicit matching action or install request.
 - **"Looks fine" without a DTU render** — a packet unproven live is unproven.

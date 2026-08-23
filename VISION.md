@@ -26,9 +26,11 @@ Concretely, two moves:
 1. **Surface what's worth knowing** — an authored bulletin, a practice, a
    concept — led by the one item most worth the reader's time, not an
    exhaustive list.
-2. **Offer what the user already has** — when the conversation hits a real
-   trigger, propose a next step, **show the exact command first**, and act only
-   on an explicit "sure." Nothing runs unattended.
+2. **Distinguish requests from offers** — a direct request authorizes ordinary
+   in-scope work without another Wayfinder ack. When Wayfinder introduces an
+   optional next step, **show the exact action first** and act only on an
+   explicit "sure." Native host, tool, safety, and destructive-action approvals
+   still apply.
 
 ## What wayfinder is not
 
@@ -39,9 +41,12 @@ Concretely, two moves:
   new and possible, nothing more.
 - **Not a feed.** One thing at a time. Curated means someone chose. Rotation and
   seen-memory keep it from repeating itself; decline-memory lets a "no" stick.
-- **Not autonomous.** Every action that writes or executes is gated behind
-  propose → show → ack → act. Installing anything is ask-first, always. A packet
-  never acts on its own findings.
+- **Not autonomous.** A signal match authorizes reading the relevant packet,
+  not executing its actions. An explicit user request to run or install
+  something authorizes that in-scope work without duplicate Wayfinder ack;
+  native approvals still apply. Only Wayfinder-initiated optional actions and
+  installs use propose → show → ack → act. A packet never acts merely because
+  its topic matched.
 - **Not stale.** Content is mined from *current* practice and refreshed often.
   Before repeating a claim, prefer what's verified now and point at the source
   of truth — commands are verified at authoring time so a packet always carries

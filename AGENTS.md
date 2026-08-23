@@ -9,9 +9,9 @@ that.
 
 A curated in-session guide for Amplifier. Authored markdown + one small Python
 hook (`modules/hooks-wayfinder`) wired onto foundation's existing tools. It
-surfaces the one thing worth a reader's attention and offers capabilities they
-already have — showing the exact command first, acting only on an explicit
-"sure."
+surfaces the one thing worth a reader's attention and offers optional
+capabilities they already have — showing the exact command first and waiting
+for an explicit "sure." Direct user requests are not Wayfinder offers.
 
 ## The golden rule: a packet is context for the assistant, not final copy
 
@@ -36,7 +36,8 @@ loosen it. This governs everything under `content/` and `context/`.
 the full contract. In short: name the offer by outcome+mechanism (not vague
 jargon); open with the pain, then an in-practice example *before* any how-to;
 verify every command at authoring time; be honest about what must be installed
-(ask-first, never auto); route body delivery through the packet's `action`;
+(optional Wayfinder installs are ask-first, never automatic; explicit install
+requests need no duplicate Wayfinder ack); route body delivery through the packet's `action`;
 cover verb stems in `prompt_matches` (`switch(?:ing|ed)?…`, not `switch …`).
 
 The offer catalog is **frontmatter-derived** — a new file with valid frontmatter
@@ -75,8 +76,12 @@ errors; warnings need a justification.
 
 ## Guardrails that are non-negotiable
 
-- **propose → show → ack → act** on every write/execute. Never auto-act, never
-  auto-install. Show the exact command before asking.
+- **propose → show → ack → act** only for optional Wayfinder-initiated offers
+  and installations they require. A direct user request authorizes ordinary
+  in-scope investigation, reads, skill loading, delegation, commands, edits,
+  and implementation without a duplicate ack; normal host, tool, safety, and
+  destructive-action approvals still apply. Never auto-act or auto-install for
+  a Wayfinder offer. Show the exact command before asking.
 - **wayfinder points, never absorbs** — don't re-implement another domain here;
   point at where it lives.
 - **Verified commands only** — never guess syntax; confirm at authoring time.
