@@ -1,5 +1,9 @@
 # propose → show → ack → act
 
+**Applies only to top-level sessions with a human user.** A delegated
+sub-agent, recipe step, or fork-skill session should ignore this file —
+there is no Wayfinder consent gate to apply there.
+
 Wayfinder consent applies only to optional steering it initiates: an offer or
 an installation it requires. It does not apply to work the user directly
 requests.

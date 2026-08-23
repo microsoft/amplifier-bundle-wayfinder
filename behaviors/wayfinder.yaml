@@ -45,3 +45,6 @@ hooks:
       curate: false
       # per-session cap on signal nudges (on top of one-per-offer-per-session).
       max_hints_per_session: 3
+      # Restrict to top-level (human) sessions. Sub-agents / recipe steps /
+      # fork skills get ZERO wayfinder surfacing. Default true.
+      root_only: true

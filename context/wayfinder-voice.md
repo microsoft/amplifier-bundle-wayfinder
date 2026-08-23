@@ -3,6 +3,10 @@
 wayfinder speaks as a daily user pointing a colleague to what matters: curated,
 plain, and opinionated. Not a feed, changelog, or marketing.
 
+**Applies only to top-level sessions with a human user.** If you are a
+delegated sub-agent, a recipe step, or a fork-skill session, wayfinder does
+not apply to you — ignore this file and get on with your task.
+
 ## Render, don't recite
 
 This file and packet bodies are context. Use their substance and intent; don't

@@ -63,6 +63,11 @@ logger = logging.getLogger(__name__)
 
 _SOURCE = "hooks-wayfinder"
 
+# Sentinel: distinguishes "key absent from event payload" from an explicit
+# ``None`` value (``parent_id`` for a genuine root session IS ``None``). See
+# ``WayfinderHooks._is_root``.
+_MISSING = object()
+
 
 # --------------------------------------------------------------------------- #
 # First-touch classification defaults (F1) + menu re-summon defaults (F3)
@@ -167,6 +172,11 @@ class WayfinderConfig:
     """All knobs are tunable via the hook's ``config:`` in the behavior YAML."""
 
     enabled: bool = True
+    # Restrict all wayfinder behavior to top-level (human) sessions. Sub-agents,
+    # recipe steps, and fork-skill sessions all carry a non-None parent_id and
+    # are unconditionally skipped when true (default). See
+    # ``WayfinderHooks._is_root`` for the fail-safe-silent semantics.
+    root_only: bool = True
     # Own-dir override. Scalar, back-compat, now @-aware (accepts an @ns:path or
     # a literal filesystem path). When set it OVERRIDES the implicit
     # auto-detected own-dir (<bundle>/content). When unset the own-dir is
@@ -248,6 +258,7 @@ class WayfinderConfig:
             content_sources = {}
         return cls(
             enabled=bool(raw.get("enabled", True)),
+            root_only=bool(raw.get("root_only", True)),
             content_dir=raw.get("content_dir") or None,
             content_sources=content_sources,
             declines_path=raw.get("declines_path") or None,
@@ -666,11 +677,43 @@ class WayfinderHooks:
         self._hinted: dict[str, set[str]] = {}
         self._hint_counts: dict[str, int] = {}
         self._source_cache: dict[str, Path] = {}
+        # Root-only gate memoization (see _is_root): per-session cached verdict,
+        # plus a one-time warning flag so a missing parent_id on every event
+        # doesn't spam the log across a whole session.
+        self._is_root_cache: dict[str, bool] = {}
+        self._warned_no_parent_id: bool = False
         # Compile the first-touch (F1) + menu (F3) classifier sets once at mount.
         self._orienting_re = _compile_patterns(list(config.orienting_patterns))
         self._greeting_re = _compile_patterns(list(config.greeting_patterns))
         self._task_re = _compile_patterns(list(config.task_patterns))
         self._menu_re = _compile_patterns(list(config.menu_patterns))
+
+    # -- root-only gate -------------------------------------------------------- #
+    def _is_root(self, session_id: str, data: dict[str, Any]) -> bool:
+        """True only for a top-level session (no parent). Memoized per session.
+
+        parent_id rides on every event via the kernel's set_default_fields.
+        Absent key == cannot determine == treat as a sub-session (fail-safe
+        silent): under-surfacing to a human is cheap; leaking into a sub-agent
+        is the defect this gate exists to prevent.
+        """
+        cached = self._is_root_cache.get(session_id)
+        if cached is not None:
+            return cached
+        parent = data.get("parent_id", _MISSING)
+        if parent is _MISSING:
+            if not self._warned_no_parent_id:
+                logger.warning(
+                    "%s: no parent_id on event payload; treating session as a "
+                    "sub-session and staying silent (set root_only: false to override)",
+                    _SOURCE,
+                )
+                self._warned_no_parent_id = True
+            is_root = False
+        else:
+            is_root = parent is None
+        self._is_root_cache[session_id] = is_root
+        return is_root
 
     # -- path / source resolution -------------------------------------------- #
     def _resolve_mention(self, value: str) -> Path | None:
@@ -869,6 +912,8 @@ class WayfinderHooks:
         if not self.config.enabled:
             return HookResult(action="continue")
         session_id = data.get("session_id") or "default"
+        if self.config.root_only and not self._is_root(session_id, data):
+            return HookResult(action="continue")
         try:
             self._assemble(session_id)
         except Exception:  # never wedge a session on assembly failure
@@ -879,6 +924,8 @@ class WayfinderHooks:
         if not self.config.enabled:
             return HookResult(action="continue")
         session_id = data.get("session_id") or "default"
+        if self.config.root_only and not self._is_root(session_id, data):
+            return HookResult(action="continue")
         prompt = data.get("prompt") or ""
 
         try:
@@ -1235,6 +1282,7 @@ async def mount(
         "description": "Wayfinder Ring 1 hook: derived catalog, decline-filter, signal nudge.",
         "config": {
             "enabled": wf_config.enabled,
+            "root_only": wf_config.root_only,
             "content_dir": wf_config.content_dir or "<auto>",
             "content_sources": dict(wf_config.content_sources),
             "declines_path": wf_config.declines_path or "<env/HOME default>",
