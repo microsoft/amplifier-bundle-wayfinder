@@ -946,7 +946,24 @@ class WayfinderHooks:
                 return HookResult(
                     action="inject_context",
                     context_injection=menu,
-                    context_injection_role="system",
+                    # TREATMENT ua8 (system-prompt stability): ephemeral tail
+                    # USER message, not "system" -- a message with
+                    # role="system" gets merged into the persistent Anthropic
+                    # system-prompt content block regardless of where it sits in
+                    # the message list (see provider-anthropic
+                    # _complete_chat_request: system_msgs = [m for m in
+                    # request.messages if m.role == "system"]). Since this
+                    # injection fires on only SOME requests of a session (e.g.
+                    # first prompt only), that made the system block's byte
+                    # length vary request-to-request, invalidating Anthropic's
+                    # prompt cache for the whole (25k+ token) stable prefix every
+                    # time it changed. role="user" keeps it out of the system
+                    # block entirely; ephemeral=True (already set) keeps it out
+                    # of persistent context and out of cache-breakpoint
+                    # placement on the conversation region (see
+                    # _count_trailing_ephemeral_messages), so the system prompt
+                    # stays byte-stable across every request of the session.
+                    context_injection_role="user",
                     ephemeral=True,
                 )
             return HookResult(action="continue")
@@ -973,7 +990,24 @@ class WayfinderHooks:
                 return HookResult(
                     action="inject_context",
                     context_injection=_build_self_intro_block(self_intro),
-                    context_injection_role="system",
+                    # TREATMENT ua8 (system-prompt stability): ephemeral tail
+                    # USER message, not "system" -- a message with
+                    # role="system" gets merged into the persistent Anthropic
+                    # system-prompt content block regardless of where it sits in
+                    # the message list (see provider-anthropic
+                    # _complete_chat_request: system_msgs = [m for m in
+                    # request.messages if m.role == "system"]). Since this
+                    # injection fires on only SOME requests of a session (e.g.
+                    # first prompt only), that made the system block's byte
+                    # length vary request-to-request, invalidating Anthropic's
+                    # prompt cache for the whole (25k+ token) stable prefix every
+                    # time it changed. role="user" keeps it out of the system
+                    # block entirely; ephemeral=True (already set) keeps it out
+                    # of persistent context and out of cache-breakpoint
+                    # placement on the conversation region (see
+                    # _count_trailing_ephemeral_messages), so the system prompt
+                    # stays byte-stable across every request of the session.
+                    context_injection_role="user",
                     ephemeral=True,
                 )
 
@@ -1002,7 +1036,10 @@ class WayfinderHooks:
                     return HookResult(
                         action="inject_context",
                         context_injection=catalog.index_text,
-                        context_injection_role="system",
+                        # TREATMENT ua8 (system-prompt stability): ephemeral
+                        # tail USER message (see rationale above the other
+                        # inject_context call sites in this module).
+                        context_injection_role="user",
                         ephemeral=True,
                     )
                 return HookResult(action="continue")
@@ -1016,7 +1053,24 @@ class WayfinderHooks:
                 return HookResult(
                     action="inject_context",
                     context_injection=light,
-                    context_injection_role="system",
+                    # TREATMENT ua8 (system-prompt stability): ephemeral tail
+                    # USER message, not "system" -- a message with
+                    # role="system" gets merged into the persistent Anthropic
+                    # system-prompt content block regardless of where it sits in
+                    # the message list (see provider-anthropic
+                    # _complete_chat_request: system_msgs = [m for m in
+                    # request.messages if m.role == "system"]). Since this
+                    # injection fires on only SOME requests of a session (e.g.
+                    # first prompt only), that made the system block's byte
+                    # length vary request-to-request, invalidating Anthropic's
+                    # prompt cache for the whole (25k+ token) stable prefix every
+                    # time it changed. role="user" keeps it out of the system
+                    # block entirely; ephemeral=True (already set) keeps it out
+                    # of persistent context and out of cache-breakpoint
+                    # placement on the conversation region (see
+                    # _count_trailing_ephemeral_messages), so the system prompt
+                    # stays byte-stable across every request of the session.
+                    context_injection_role="user",
                     ephemeral=True,
                 )
             return HookResult(action="continue")
@@ -1101,7 +1155,24 @@ class WayfinderHooks:
                 return HookResult(
                     action="inject_context",
                     context_injection=_build_signal_summon_block(item),
-                    context_injection_role="system",
+                    # TREATMENT ua8 (system-prompt stability): ephemeral tail
+                    # USER message, not "system" -- a message with
+                    # role="system" gets merged into the persistent Anthropic
+                    # system-prompt content block regardless of where it sits in
+                    # the message list (see provider-anthropic
+                    # _complete_chat_request: system_msgs = [m for m in
+                    # request.messages if m.role == "system"]). Since this
+                    # injection fires on only SOME requests of a session (e.g.
+                    # first prompt only), that made the system block's byte
+                    # length vary request-to-request, invalidating Anthropic's
+                    # prompt cache for the whole (25k+ token) stable prefix every
+                    # time it changed. role="user" keeps it out of the system
+                    # block entirely; ephemeral=True (already set) keeps it out
+                    # of persistent context and out of cache-breakpoint
+                    # placement on the conversation region (see
+                    # _count_trailing_ephemeral_messages), so the system prompt
+                    # stays byte-stable across every request of the session.
+                    context_injection_role="user",
                     ephemeral=True,
                 )
         return None
@@ -1132,7 +1203,24 @@ class WayfinderHooks:
                 return HookResult(
                     action="inject_context",
                     context_injection=block,
-                    context_injection_role="system",
+                    # TREATMENT ua8 (system-prompt stability): ephemeral tail
+                    # USER message, not "system" -- a message with
+                    # role="system" gets merged into the persistent Anthropic
+                    # system-prompt content block regardless of where it sits in
+                    # the message list (see provider-anthropic
+                    # _complete_chat_request: system_msgs = [m for m in
+                    # request.messages if m.role == "system"]). Since this
+                    # injection fires on only SOME requests of a session (e.g.
+                    # first prompt only), that made the system block's byte
+                    # length vary request-to-request, invalidating Anthropic's
+                    # prompt cache for the whole (25k+ token) stable prefix every
+                    # time it changed. role="user" keeps it out of the system
+                    # block entirely; ephemeral=True (already set) keeps it out
+                    # of persistent context and out of cache-breakpoint
+                    # placement on the conversation region (see
+                    # _count_trailing_ephemeral_messages), so the system prompt
+                    # stays byte-stable across every request of the session.
+                    context_injection_role="user",
                     ephemeral=True,
                 )
         return HookResult(action="continue")
