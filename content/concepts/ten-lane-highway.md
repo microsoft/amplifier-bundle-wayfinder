@@ -41,3 +41,5 @@ The practice grew in rungs, each a real step:
 In one week on the cortex project: **332 distinct lane-worktrees**, and **238 work-items resolved in 7 days** through the lanes. Of `/goal` runs that reached a terminal state, **~70% reached "achieved"** (119 of ~169). These are traceable numbers — but they're one person's practice on one set of projects, not a general benchmark.
 
 To run it: `load_skill("goal-batch")` and start with 2–3 lanes. There's no cap, but nobody should meet the failure modes at width six on a first run.
+
+The no-cap is about **lanes**, not about the resources lanes create. A lane ends; the containers, VMs, environments, or servers it provisioned don't — they outlive it unless something tears them down. So a steady-state loop that provisions anything needs its own counterweight: a cumulative ceiling on the total in flight, and a periodic sweep of what past lanes left behind. Without both, an unattended highway keeps every lane full while the leftovers pile up, until the host runs out of room underneath it.
