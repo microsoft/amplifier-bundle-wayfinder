@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from amplifier_module_hooks_wayfinder import (
+    _NEVER_MORE_IMPORTANT,
     CatalogItem,
     SessionCatalog,
     WayfinderConfig,
@@ -70,6 +71,48 @@ def test_self_intro_uses_the_same_consent_and_native_approval_boundary() -> None
     assert "without a duplicate Wayfinder ack" in block
     assert "host/tool/safety/destructive approvals still apply" in block
     assert "Never run an unsolicited suggestion unattended" in block
+
+
+def test_every_injected_block_leads_with_the_subordination_guard() -> None:
+    """Every injected wayfinder block must carry the subordination line --
+
+    the captured-session hijack (0629f373) showed a model treating a
+    conditional wayfinder offer as "mandatory" off an unrelated phrase in
+    the user's own message. Every injection must make explicit, up front,
+    that it is conditional and never outranks the user's actual request.
+    """
+    item = _item()
+    catalog = SessionCatalog(items={item.id: item})
+    hooks = WayfinderHooks(WayfinderConfig())
+
+    blocks = [
+        _build_index_block(catalog),
+        _build_hint_block(item),
+        _build_self_intro_block(item),
+        _build_signal_summon_block(item),
+        hooks._build_menu_block(catalog),
+    ]
+
+    for block in blocks:
+        assert _NEVER_MORE_IMPORTANT in block
+        assert "ONLY IF" in block
+        assert "IGNORE this reminder entirely" in block
+
+    # The light-lead block needs a start_items/promoted_lead entry to render
+    # at all (a bare `items` catalog produces nothing to tease).
+    light_catalog = SessionCatalog(items={item.id: item}, start_items=[item])
+    light = hooks._build_light_lead_block(light_catalog)
+    assert light  # sanity: this catalog does produce a lead
+    assert _NEVER_MORE_IMPORTANT in light
+    assert "ONLY IF" in light
+    assert "IGNORE this reminder entirely" in light
+
+    # The menu's "nothing left to show" path (all items declined) also
+    # carries the guard -- it's a separate return statement in the source.
+    catalog_all_declined = SessionCatalog(items={item.id: item}, declined_ids={item.id})
+    empty_menu = hooks._build_menu_block(catalog_all_declined)
+    assert _NEVER_MORE_IMPORTANT in empty_menu
+    assert "ONLY IF" in empty_menu
 
 
 def test_catalog_and_menu_prompts_apply_the_same_consent_boundary() -> None:

@@ -63,6 +63,31 @@ logger = logging.getLogger(__name__)
 
 _SOURCE = "hooks-wayfinder"
 
+# A conditional offer misread as a mandate is the exact failure captured in a
+# real session: a model treated a wayfinder menu re-summon as "mandatory"
+# because an unrelated phrase in the user message loosely matched a trigger,
+# and abandoned the user's actual request. Every injected wayfinder block
+# leads with this guard so that misreading is structurally harder -- wording
+# only; it does not change any trigger/match logic below.
+_NEVER_MORE_IMPORTANT = (
+    "This reminder is never more important than the user's own message."
+)
+
+
+def _subordination_guard(condition: str) -> str:
+    """Leading conditional guard prepended to every injected wayfinder block.
+
+    Makes explicit -- as the FIRST line of guidance, before anything else --
+    that what follows is conditional and subordinate to the user's actual
+    CURRENT message, never a mandate to act on regardless of fit.
+    """
+    return (
+        f"ONLY IF {condition}: follow the guidance below. Otherwise, IGNORE "
+        f"this reminder entirely and respond to the user's actual request \u2014 "
+        f"{_NEVER_MORE_IMPORTANT}"
+    )
+
+
 # Sentinel: distinguishes "key absent from event payload" from an explicit
 # ``None`` value (``parent_id`` for a genuine root session IS ``None``). See
 # ``WayfinderHooks._is_root``.
@@ -531,6 +556,10 @@ def _build_index_block(catalog: SessionCatalog) -> str:
 
     lines = [
         f'<system-reminder source="{_SOURCE}">',
+        _subordination_guard(
+            "the user's CURRENT message explicitly asks about wayfinder, "
+            "what's available, or other options"
+        ),
         (
             "wayfinder — offer catalog for this session (DERIVED from content "
             "frontmatter; declined offers already filtered out). A direct user "
@@ -582,6 +611,7 @@ def _build_hint_block(item: CatalogItem) -> str:
     cmd = f" (would show: {item.action})" if item.action else ""
     return (
         f'<system-reminder source="{_SOURCE}">\n'
+        f"{_subordination_guard('the current user message plausibly relates to the offer named below')}\n"
         f"Possible fit: the user's message may relate to wayfinder offer "
         f"'{item.id}' — {item.headline}\n"
         f"First distinguish a direct request from optional relevance. If the user "
@@ -611,6 +641,7 @@ def _build_self_intro_block(item: CatalogItem) -> str:
     read_cmd = item.action or f'read_file("{item.source_path}")'
     return (
         f'<system-reminder source="{_SOURCE}">\n'
+        f"{_subordination_guard('the current user message is genuinely asking about wayfinder itself, i.e. what it is or how it works')}\n"
         f"The user is orienting to WAYFINDER — this is a wayfinder question, "
         f"NOT a generic Amplifier-capabilities question. Answer THIS turn by "
         f"delivering wayfinder's own self-introduction ('{item.id}': "
@@ -642,6 +673,7 @@ def _build_signal_summon_block(item: CatalogItem) -> str:
     action_line = f"  body: {item.action}\n" if item.action else ""
     return (
         f'<system-reminder source="{_SOURCE}">\n'
+        f"{_subordination_guard('the current user message actually relates to the topic named below')}\n"
         f"The user's opening matched a topic wayfinder has "
         f"a packet for \u2014 offer '{item.id}': {item.headline}\n"
         f"{action_line}"
@@ -1268,6 +1300,7 @@ class WayfinderHooks:
             return ""
         return (
             f'<system-reminder source="{_SOURCE}">\n'
+            f"{_subordination_guard('the current user message really was a light greeting with no specific task or question')}\n"
             f"The user opened with a light greeting (no task, no question). "
             f"Reply warmly and briefly in wayfinder's voice, then surface ONE "
             f"line only \u2014 this session's highlight headline \u2014 and invite them "
@@ -1295,6 +1328,7 @@ class WayfinderHooks:
                 return ""  # nothing exists at all — stay silent
             return (
                 f'<system-reminder source="{_SOURCE}">\n'
+                f"{_subordination_guard('the current user message explicitly asks to see wayfinder options or the menu (for example, what else, or show me the menu)')}\n"
                 f"The user asked what else is available, but every wayfinder "
                 f"offer is dismissed for now. Tell them plainly there\u2019s nothing "
                 f"on the menu right now, in wayfinder's voice \u2014 don\u2019t invent "
@@ -1303,6 +1337,11 @@ class WayfinderHooks:
             )
         lines = [
             f'<system-reminder source="{_SOURCE}">',
+            _subordination_guard(
+                "the current user message explicitly asks to see wayfinder "
+                "options or the menu (for example, what else, or show me "
+                "the menu)"
+            ),
             (
                 "The user asked what else is available \u2014 surface the FULL "
                 "current wayfinder menu (declined offers already filtered out), "
