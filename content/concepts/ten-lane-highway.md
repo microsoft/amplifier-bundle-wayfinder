@@ -9,7 +9,8 @@ signals:
     - '\bten[- ]?lane|(scal|widen).{0,20}\blanes?\b'
 trigger: "the user is curious about scaling parallel lanes"
 action: 'read_file("@wayfinder:content/concepts/ten-lane-highway.md")'
-provenance: "coined label; practice mined from cortex sessions (see body)"
+verified_at: 2026-09-02
+provenance: "coined label; practice mined from cortex sessions (see body); try_now re-verified 2026-09-02 — goal-batch is a live skill in the curated collection"
 ---
 
 # The ten-lane highway

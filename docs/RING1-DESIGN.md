@@ -102,6 +102,13 @@ The hook fires only the **coarse ephemeral nudge**. The agent still runs propose
 
 **File convention: one markdown file per item, YAML frontmatter carries all catalog metadata.** The **catalog becomes a derived index** — the hook scans frontmatter across all sources and assembles it. No more hand-maintaining `offer-catalog.md` alongside the content. Frontmatter fields: `id`, `category`, `headline`, `trigger` (prose), `signals` (machine), `action`, `verified_at`, `provenance`, `supersedes`.
 
+> **Reality note (2026-09-02) — what actually shipped diverges from this design in three ways.**
+> An external packet author (PR #9) hit this drift, so it's recorded here rather than left to mislead the next one:
+> 1. **Bulletin lifecycle is rotation, not "supersede + archive."** The shipped hook rglobs all of `content/`, and rotates the session lead across every `promoted: true` item (seen-memory in `surfaced.jsonl`). Multiple bulletins coexist and rotate; `archive/` is unused so far.
+> 2. **The hook never reads `supersedes`.** It DOES read `promoted` and `curated`, which the field list above omits.
+> 3. **`pro-tips/` does not exist yet** — no directory, no category handling.
+> The authoritative field reference is `skills/wayfinder-pack/SKILL.md` (and, if ratified, a per-seam packet contract). This document is design history, not the contract.
+
 **The mining recipe** (staged, reproduces `goal-workflow-evolution.md` mechanically):
 ```yaml
 name: wayfinder-mine-practice
