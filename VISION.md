@@ -26,13 +26,13 @@ Concretely, two moves:
 1. **Surface what's worth knowing** — an authored bulletin, a practice, a
    concept — led by the one item most worth the reader's time, not an
    exhaustive list.
-2. **Distinguish requests from offers** — a direct request authorizes ordinary
-   in-scope work without another Wayfinder ack. When Wayfinder introduces an
-   optional next step, **show the exact action first** and act only on an
-   explicit "sure." Native host, tool, safety, and destructive-action approvals
-   still apply.
+2. **Offer what the user already has** — when wayfinder introduces an optional
+   next step, it is an offer: shown exactly, taken only on an explicit yes.
+   Nothing wayfinder initiates runs unattended. The precise consent boundary
+   (requests vs. offers) lives in the channel guidance and the packet contract,
+   not here.
 
-## What wayfinder is not
+## What this repo deliberately resists
 
 - **Not an absorber.** wayfinder *points*; it never re-implements another
   domain's expertise. The capabilities live where they live — skills load by
@@ -41,16 +41,13 @@ Concretely, two moves:
   new and possible, nothing more.
 - **Not a feed.** One thing at a time. Curated means someone chose. Rotation and
   seen-memory keep it from repeating itself; decline-memory lets a "no" stick.
-- **Not autonomous.** A signal match authorizes reading the relevant packet,
-  not executing its actions. An explicit user request to run or install
-  something authorizes that in-scope work without duplicate Wayfinder ack;
-  native approvals still apply. Only Wayfinder-initiated optional actions and
-  installs use propose → show → ack → act. A packet never acts merely because
-  its topic matched.
-- **Not stale.** Content is mined from *current* practice and refreshed often.
-  Before repeating a claim, prefer what's verified now and point at the source
-  of truth — commands are verified at authoring time so a packet always carries
-  runnable actions.
+- **Not autonomous.** Nothing wayfinder initiates runs unattended, and a packet
+  never acts merely because its topic matched. The precise consent boundary
+  (requests vs. offers, propose → show → ack → act) lives in the channel
+  guidance and the packet contract.
+- **Not stale.** wayfinder refuses to repeat unverified claims. Content is
+  mined from current practice, and every packet carries commands verified at
+  authoring time (the packet contract enforces this).
 
 ## Why authored, not generated
 
@@ -71,15 +68,21 @@ cheaply as possible. That is the north star; everything mechanical serves it.
 
 ## How it grows — the ring model
 
-wayfinder widens only as each ring proves out, optimizing for out-sooner and
-improve-in-the-wild:
+wayfinder widens only on observed signal, never on a calendar. The standing
+ladder of audiences:
 
-- **Ring 0** — one person, daily-driven: the thinnest end-to-end thing that works.
-- **Ring 1** — a small group of observed testers; deterministic firing and
-  enforced decline-memory earn their place here.
-- **Ring 2** — public: team distribution and a public bundle, timed off observed
-  signal, not a calendar.
+- **Ring 0** — one person, daily-driving the thinnest end-to-end thing.
+- **Ring 1** — a small group of observed testers.
+- **Ring 2** — public distribution.
 
-Each ring is a chance to learn in real use before widening — the same discipline
-the product itself embodies: surface the one thing worth knowing, prove it in
-the world, and only then reach further.
+Each ring admits a wider audience only when real use in the previous ring says
+so — the same discipline the product itself embodies: surface the one thing
+worth knowing, prove it in the world, and only then reach further. Which
+features ship, and when a ring widens, are tracker matters, not vision.
+
+## Changelog
+
+- 2026-09-03 — genre-conformance amendments prepared ahead of first owner
+  ratification: ring feature-assignments demoted to status docs, duplicated
+  consent mechanics thinned to pointers (channel guidance + packet contract),
+  resists section given its canonical heading. Substance unchanged.

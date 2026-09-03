@@ -195,13 +195,29 @@ def test_decline_semantics_preserve_soft_and_hard_behavior() -> None:
 
 
 def test_vision_and_packet_authoring_contract_preserve_signal_boundary() -> None:
-    vision = (ROOT / "VISION.md").read_text()
+    """The signal boundary's authoritative home is the packet contract.
+
+    Deliberate contract update (see VISION.md changelog, 2026-09-03): VISION
+    was genre-conformed ahead of ratification — it keeps the PRINCIPLE and
+    points at the contract; contracts/packet.v1.md Core clause 6 carries the
+    MECHANICS verbatim; the authoring skill is unchanged. This test guards all
+    three homes so the boundary can never silently vanish from any of them.
+    """
+    vision = " ".join((ROOT / "VISION.md").read_text().split())
+    contract = " ".join((ROOT / "contracts/packet.v1.md").read_text().split())
     authoring = (ROOT / "skills/wayfinder-pack/SKILL.md").read_text()
 
-    assert "A signal match authorizes reading the relevant packet" in vision
-    assert "not executing its actions" in vision
-    assert "without duplicate Wayfinder ack" in vision
-    assert "native approvals still apply" in vision
+    # Vision: the principle + the pointer, not the mechanics.
+    assert "never acts merely because its topic matched" in vision
+    assert "Nothing wayfinder initiates runs unattended" in vision
+    assert "packet contract" in vision
+
+    # Contract: the mechanics, verbatim (Core clause 6).
+    assert "Signals establish relevance, never consent" in contract
+    assert "A signal match authorizes reading the packet" in contract
+    assert "never authorizes executing" in contract
+
+    # Authoring skill: unchanged.
     assert "A match establishes relevance, not execution consent" in authoring
     assert "It authorizes\n  reading the packet" in authoring
     assert "without duplicate Wayfinder ack" in authoring

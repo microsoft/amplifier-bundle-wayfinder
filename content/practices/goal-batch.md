@@ -10,7 +10,8 @@ signals:
     - '\b(goal[- ]?batch|parallel lanes?|run .* in parallel)\b'
 trigger: "the user has 2+ independent, parallelizable tasks that won't collide"
 action: 'read_file("@wayfinder:content/practices/goal-batch.md")'
-provenance: "goal-batch skill + ten-lane-highway practice"
+verified_at: 2026-09-03
+provenance: "goal-batch skill + ten-lane-highway practice; try_now re-verified 2026-09-03 — goal-batch is a live skill in the curated collection, NL invocation form per voice guidance"
 ---
 
 # goal-batch — parallel autonomous lanes
