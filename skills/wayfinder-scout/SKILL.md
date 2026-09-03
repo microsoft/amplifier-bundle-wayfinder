@@ -57,7 +57,12 @@ session lands locally; a CI server holds at most a copy. Probe in this order:
 Root: `${AMPLIFIER_CONTEXT_INTELLIGENCE_BASE_PATH:-$HOME/.amplifier/projects}`.
 These `events.jsonl` files can carry 100k+ token lines — **never read them
 whole**. Pick the ~100–200 most-recent session dirs (by mtime), then
-`grep -l` / `grep -c` for runtime markers only, counting FILES:
+`grep -l` for runtime markers, and count **session DIRECTORIES, not files** —
+a session often carries the same markers in both `events.jsonl` and
+`context-intelligence/events.jsonl`, so raw file counts run ~2× hot. Two more
+measured traps: **exclude the CURRENT session's own directory** (this skill's
+text names the marker strings, so the session that loaded it self-matches),
+and dedupe before you count:
 - goal runs: `grep -l "OrchestratorGoalProgress"` (kernel event — a menu
   mention can never produce it)
 - skill adoption: `grep -l '"skill_name": "<id>"'` (SkillLoad records)
@@ -105,7 +110,8 @@ Render in wayfinder's voice: one thing first, commands-first, short.
 
 ## Budget and fail-safe
 
-Spend at most ~6 tool calls and a few seconds. If any probe errors, comes up
+Aim for ~6 tool calls; hard cap 12 (measured: a thorough empty-evidence sweep
+costs about that — beyond it you're re-proving absence). If any probe errors, comes up
 empty, or the environment looks unfamiliar — **render the catalog exactly as
 injected** (its rotation order is the designed fallback) and move on. Never
 block the turn, never surface probe errors to the reader, never fabricate
