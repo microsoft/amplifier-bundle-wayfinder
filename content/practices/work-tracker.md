@@ -12,8 +12,8 @@ signals:
     - '\b(?:work[- ]?tracker|amplifier-work-tracker|shared (?:work )?queue|work queue)\b|\bclaim\b[\w ]{0,20}\bitem\b'
 trigger: "the user wants a shared/persistent work queue, to claim work items, or to capture discovered work and lessons mid-session"
 action: 'read_file("@wayfinder:content/practices/work-tracker.md")'
-verified_at: 2026-08-19
-provenance: "installed amplifier-work-tracker CLI --help; commands + name regex verified against the live binary"
+verified_at: 2026-09-02
+provenance: "installed amplifier-work-tracker CLI --help + per-subcommand --help (new/add/claim/edit); try_now commands, name regex, and the verb list verified against the live binary. Enumerated capability claims deliberately removed after a stale 'no edit command' gotcha misled a first-time setup -- the packet now points at --help for the command surface and states only non-drifting invariants."
 ---
 
 # work-tracker — shared work queue
@@ -29,9 +29,10 @@ Two parallel sessions quietly redoing each other's work — and the half-finishe
 
 **What it needs.** This one isn't built-in — it's a separate CLI plus a background service (a shared dolt server + reap/notify sweep loops). Confirm it's present in this session before offering commands: `amplifier-work-tracker doctor` checks the CLI's assumptions against the live binary (`which amplifier-work-tracker` is a quick presence check; the `work_tracker_status` tool reports the same if your session has it). An explicit request to install, start, or use it authorizes that in-scope action without duplicate Wayfinder ack; native host, tool, safety, and destructive-action approvals still apply. If Wayfinder introduces setup or use as an optional next step, show the exact action and wait for explicit ack; never act unsolicited.
 
-**Gotchas.**
-- **No create-project op beyond `new`.** Run `new` first; `add` won't conjure a missing project.
-- **Project names reject hyphens (and dots).** They must match `^[a-z][a-z0-9_]{1,30}$` — use underscores (`my_project`, not `my-project`). Dots are rejected deliberately: they'd produce a project that reports "created" and then fails every later command.
-- **No `edit` command.** To correct a bad item, file a NEW item that references the wrong one — items aren't edited in place. (`unclaim` releases a held item without resolving it; `resolve` closes one with a reason.)
+**Gotchas.** Only the things that don't change — for the command surface itself, ask the binary, not this packet.
+- **`amplifier-work-tracker --help` is the source of truth for verbs.** The verb set grows faster than any note about it (items *are* edited in place with `edit`; projects can be `rename`d and `remove`d; items `move` between projects; `defer`/`block`/`dep` exist). If a capability list — including one a previous session remembers — disagrees with `--help`, `--help` wins.
+- **`new` first.** There is no implicit create-on-add; `add` won't conjure a missing project.
+- **Project names reject hyphens and dots.** They must match `^[a-z][a-z0-9_]{1,30}$` — use underscores (`my_project`, not `my-project`). Not cosmetic: a project name becomes a dolt database name, and hyphens/dots aren't valid unquoted SQL identifiers. Dots are rejected deliberately: they'd produce a project that reports "created" and then fails every later command.
+- **Custody has semantics you should not guess at.** Claiming is atomic and PID-bound; custody is a liveness signal (renewals), not a timer; a reported write failure means re-read before retrying. Load the `claiming-work-safely` skill before driving the claim → declare → resolve loop.
 
 **More.** It shines as a discovered-work / lesson **sink** — not only a custody queue for planned work: when you hit a gap mid-session, `add` it (or file it against the item you hold) so it outlives the context window. For the safe claim → declare → resolve custody loop (freshness, reaps, empty queue), load the `claiming-work-safely` skill.
