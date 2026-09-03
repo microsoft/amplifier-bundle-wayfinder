@@ -47,6 +47,12 @@ template, do not write anything that reads like data to be echoed. Good context
 plus high-level guidance beats tight control of the words. Everything below
 serves that idea.
 
+**The format itself is contracted.** `contracts/packet.v1.md` (FROZEN) is
+authoritative on the packet format — required fields, id rules, the `action`
+form, signals-are-not-consent, authoring-time verification. This skill is the
+procedure that teaches that contract; where they ever disagree, the contract
+wins.
+
 ## Steps
 
 ### 1. Establish what the offer is and what it needs
@@ -189,9 +195,17 @@ assumed.
 - Fix any static prose that names the old id if you renamed/merged a packet
   (`grep -rn '<old-id>' .` across `content/`, `context/`, `modules/`).
 
-**Success criteria**: The file is in the right `content/` subdir, no dangling
-references to a renamed/removed id remain, and (for an internal pack) the
-`content_sources` wiring points at it.
+- **Run the conformance kit** — the repo's standing test command validates
+  every packet against the frozen contract (per-clause, contributor-runnable,
+  no DTU needed) and runs the ledger tripwires:
+
+  ```bash
+  PYTHONPATH=modules/hooks-wayfinder python3 -m pytest modules/hooks-wayfinder/tests/ ledger/checks -q
+  ```
+
+**Success criteria**: The file is in the right `content/` subdir, the
+conformance kit is green, no dangling references to a renamed/removed id
+remain, and (for an internal pack) the `content_sources` wiring points at it.
 
 ### 7. Verify in a DTU before shipping
 
