@@ -66,7 +66,18 @@ loop (see `SCRATCH.md` in the workspace for the live instance ids):
    `action`?), and a signal phrasing.
 5. For an isolated pass, delegate to `amplifier-tester:validator`.
 
-Touching hook Python? Run `python_check` and keep it clean before committing.
+## The standing test command (module suite + conformance ledger)
+
+The repo's test job is ONE command — it runs the hook's unit tests, the
+packet-contract validator (`contracts/packet.v1.md` is FROZEN; the validator
+checks every packet under `content/**`), and the ledger tripwires
+(`ledger/checks/`). Run it green before committing anything:
+
+```
+PYTHONPATH=modules/hooks-wayfinder python3 -m pytest modules/hooks-wayfinder/tests/ ledger/checks -q
+```
+
+Touching hook Python? Also run `python_check` and keep it clean.
 
 ## Validate the repo
 

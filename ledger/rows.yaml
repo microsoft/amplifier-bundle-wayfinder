@@ -1,0 +1,429 @@
+# Conformance ledger — wayfinder
+#
+# Format: converge:docs/LEDGER-FORMAT.md (DRAFT convention). Semantics of the
+# disposition vocabulary: converge PROTOCOL.md §3.3. This file is a top-level
+# YAML LIST of rows — no wrapper mapping, no `meta:` key. LGR-000 is the SYNC
+# row (§4).
+#
+# SEEDed 2026-09-03 against contracts/packet.v1.md (FROZEN) at repo fd1f48c.
+#
+# Local conventions (deviations are data for ledger-format v1):
+#   - `assertion.kind: indexed` cites the repo's OWN conformance kit as a LIST
+#     of "<path>::<test name>" strings, verified statically (parse, don't
+#     import). The kit is the contract's required gate; the ledger indexes it
+#     rather than reimplementing it.
+#   - `assertion.kind: probe` / `absence` cite a function name in
+#     ledger/checks/test_ledger.py. The ledger owns probes ONLY for clauses the
+#     repo's kit deliberately declines to assert (C1, C5 — see the kit
+#     docstring) and for the ledger's own integrity.
+#   - The SYNC row carries an extra `sync:` list (path + sha256 + pinned repo
+#     sha). The format specifies content only ("path + content hash"), not shape.
+
+- id: LGR-000
+  title: SYNC — contract file pin (hash mismatch ⇒ mandatory full-ledger re-review)
+  contract:
+    file: contracts/packet.v1.md
+    clause: SYNC
+    quote: |
+      **Status: FROZEN** — ratified by the owner (bkrabach), 2026-09-03.
+  sync:
+    - path: contracts/packet.v1.md
+      sha256: 634ef92c9a360eb6a63a1d9887de8bb145b3ce02f9548009e9d9bf9929e29343
+      pinned_at_repo_sha: fd1f48c2292278cd355648f6a7fda121c5cca623
+  disposition: CONFORMS
+  assertion:
+    kind: probe
+    ref: test_row_lgr_000
+  notes: >
+    A mismatch is NOT a silent hash bump. It triggers a full-ledger re-review:
+    quote verification proves the quoted text still exists; only the re-review
+    confirms each row's READING of it is still correct.
+
+# --------------------------------------------------------------------------- #
+# Core 1 — one file, one packet
+# --------------------------------------------------------------------------- #
+- id: LGR-001
+  title: one file, one packet — registered content source; 1:1 file↔packet
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 1"
+    quote: |
+      A packet is a single markdown file under a registered content source
+      (today: `content/bulletins/`, `content/practices/`, `content/concepts/`).
+      No packet spans files; no file carries two packets.
+  disposition: CONFORMS
+  assertion:
+    kind: probe
+    ref: test_row_lgr_001
+  notes: >
+    Ledger-owned probe by design: the repo's contract kit explicitly declines
+    C1 as "structural properties of the consumer's own architecture, not
+    per-packet frontmatter shape" (test_packet_contract.py docstring, lines
+    27-31). Code evidence for the structural half: load_catalog
+    (amplifier_module_hooks_wayfinder/__init__.py:436-443) makes exactly ONE
+    _item_from_meta call per rglob'd file, and parse_frontmatter
+    (__init__.py:349-373) consumes only the FIRST `---` block — so a file can
+    contribute at most one packet. The probe asserts the observable form:
+    every discovered packet sits under one of the three registered dirs, and
+    the derived catalog is a bijection between files and item ids (12/12 at
+    seed time).
+
+# --------------------------------------------------------------------------- #
+# Core 2 — id
+# --------------------------------------------------------------------------- #
+- id: LGR-002
+  title: id required, kebab-case, unique within this repo's content sources
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 2"
+    quote: |
+      required, kebab-case, unique.
+  disposition: CONFORMS
+  assertion:
+    kind: indexed
+    ref:
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_real_packet_conforms_to_core_clauses
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_ids_are_unique_across_real_packets_only
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_fixture_fails_exactly_its_targeted_clause
+  notes: >
+    Discriminating fixtures: missing-id.md (C2+C3) and bad-id-format.md (C2).
+    Uniqueness scope here is this repo's content/** only — the cross-source
+    half is LGR-003.
+
+- id: LGR-003
+  title: id uniqueness across ALL content sources composed into a session
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 2"
+    quote: |
+      Unique across ALL content sources composed into a session.
+  disposition: NOT-ASSERTABLE
+  assertion:
+    kind: none
+  justification: >
+    Not assertable in-process from this repo: only one content source exists
+    here (the auto-detected own-dir). Cross-source uniqueness is a runtime
+    property of a session that composes a second `content_sources` pack, which
+    lives in another bundle's hook config. The consumer's documented tolerance
+    on collision is first-id-wins with a warning
+    (amplifier_module_hooks_wayfinder/__init__.py:448-457) — NOT enforcement —
+    and the contract itself Backlogs the policy ("Multi-source `id` collision
+    policy (first-wins today)", promotes when a second non-internal content
+    source lands). So this is a judgment-reviewed clause today, not a machine
+    check; it is named here rather than smuggled into LGR-002's green.
+  notes: >
+    Review cadence: revisit when the Backlogged multi-source collision policy
+    promotes. At that point this row should become a probe over a two-source
+    load_catalog fixture.
+
+# --------------------------------------------------------------------------- #
+# Core 3 — required frontmatter fields
+# --------------------------------------------------------------------------- #
+- id: LGR-004
+  title: required frontmatter fields present; category in registered vocabulary
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 3"
+    quote: |
+      **Required frontmatter fields:** `id`, `category`, `headline`, `trigger`,
+      `action`. `category` is one of the registered vocabulary (`bulletin`,
+      `practice`, `concept`; expansion is Reserved).
+  disposition: CONFORMS
+  assertion:
+    kind: indexed
+    ref:
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_real_packet_conforms_to_core_clauses
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_fixture_fails_exactly_its_targeted_clause
+  notes: >
+    Discriminating fixtures: missing-headline.md, bad-category.md,
+    missing-action.md (each C3), plus missing-id.md (C2+C3).
+    Content-accuracy watch (not a clause finding): content/concepts/
+    about-wayfinder.md tells users "Pro-tips ride the same rails when there are
+    any." That is conditional and therefore honest today, but a `pro-tips`
+    category is Backlogged (promotes when the first pro-tip packet ships) and
+    is NOT in the registered vocabulary. If a packet ever carries
+    `category: pro-tip` before that clause promotes, this row goes VIOLATION.
+    The "headline is one plain line: outcome + why-you-care" and "trigger is
+    prose describing when the offer is genuinely relevant" qualities are
+    authoring judgment; the kit asserts presence/non-emptiness only.
+
+# --------------------------------------------------------------------------- #
+# Core 4 — action
+# --------------------------------------------------------------------------- #
+- id: LGR-005
+  title: action is an @namespace mention resolving to the packet's own file
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 4"
+    quote: |
+      It is an `@namespace:`-form mention (e.g.
+      `read_file("@wayfinder:content/practices/goal.md")`), never a filesystem
+      path, and it resolves to the packet's own file.
+  disposition: CONFORMS
+  assertion:
+    kind: indexed
+    ref:
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_real_packet_conforms_to_core_clauses
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_fixture_fails_exactly_its_targeted_clause
+  notes: >
+    Discriminating fixtures: action-filesystem-path.md and
+    action-wrong-target.md (both C4). The delivery half of the clause
+    ("deliver the body by running `action` exactly as written — never by
+    globbing or searching") is asserted on the consumer side by the injected
+    menu/summon wording — see LGR-009's cites and the menu block's "run its
+    `body:` action EXACTLY as written ... never glob/grep/search for the file"
+    (__init__.py:1355-1357).
+
+# --------------------------------------------------------------------------- #
+# Core 5 — derived catalog
+# --------------------------------------------------------------------------- #
+- id: LGR-006
+  title: catalog derived from packet frontmatter alone (add file ⇒ add offer)
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 5"
+    quote: |
+      The consumer assembles the session catalog from packet frontmatter alone.
+      Adding a conforming file adds the offer; removing the file removes it.
+  disposition: CONFORMS
+  assertion:
+    kind: probe
+    ref: test_row_lgr_006
+  notes: >
+    Ledger-owned probe: the repo's kit declines C5 for the same reason it
+    declines C1 (structural, not per-packet). The probe drives the consumer's
+    real load_catalog over a tmp source dir: a conforming file appears in the
+    catalog with no registration step, and disappears when removed.
+
+- id: LGR-007
+  title: no catalog index/registry file exists, and none is read
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 5"
+    quote: |
+      No index file exists to update, and none may be introduced.
+  disposition: CONFORMS
+  assertion:
+    kind: absence
+    ref: test_row_lgr_007
+  notes: >
+    Absence assertion (grep count 0), so a future silently-introduced registry
+    flips this row red. Covers the historical registry the hook replaced
+    (context/offer-catalog.md — still named in the module docstring at
+    __init__.py:7 and in docs/RING0-PLAN.md as history; the FILE is gone) and
+    any index/catalog/registry/manifest-shaped file under content/.
+
+# --------------------------------------------------------------------------- #
+# Core 6 — signals establish relevance, never consent
+# --------------------------------------------------------------------------- #
+- id: LGR-008
+  title: every signals.prompt_matches regex compiles
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 6"
+    quote: |
+      `signals.prompt_matches` regexes must compile
+  disposition: CONFORMS
+  assertion:
+    kind: indexed
+    ref:
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_real_packet_conforms_to_core_clauses
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_fixture_fails_exactly_its_targeted_clause
+  notes: >
+    Discriminating fixture: bad-regex.md (C6). Note the consumer itself is
+    lenient at runtime — _compile_patterns (__init__.py:386-395) logs and skips
+    an invalid pattern rather than failing, which is precisely why the
+    authoring-time gate carries this clause.
+
+- id: LGR-009
+  title: a signal match authorizes reading the packet, never executing anything
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 6"
+    quote: |
+      A signal match authorizes reading the packet — it never authorizes
+      executing any command, skill, install, or edit the packet describes.
+  disposition: CONFORMS
+  assertion:
+    kind: indexed
+    ref:
+      - modules/hooks-wayfinder/tests/test_prompt_builders.py::test_signal_summon_topical_match_authorizes_packet_read_only
+      - modules/hooks-wayfinder/tests/test_prompt_builders.py::test_self_intro_uses_the_same_consent_and_native_approval_boundary
+      - modules/hooks-wayfinder/tests/test_prompt_builders.py::test_hint_block_distinguishes_direct_request_from_optional_offer
+      - modules/hooks-wayfinder/tests/test_prompt_builders.py::test_catalog_and_menu_prompts_apply_the_same_consent_boundary
+      - modules/hooks-wayfinder/tests/test_prompt_builders.py::test_vision_and_packet_authoring_contract_preserve_signal_boundary
+  notes: >
+    These cites assert the boundary in the consumer's own injected wording
+    (the surface a model actually reads), not merely in prose. The last cite
+    additionally guards the boundary's three documented homes — VISION.md (the
+    principle + pointer), contracts/packet.v1.md Core 6 (the mechanics), and
+    skills/wayfinder-pack/SKILL.md (authoring) — so it can never silently
+    vanish from one of them.
+
+- id: LGR-010
+  title: prompt_matches patterns are conservative and word-boundary
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 6"
+    quote: |
+      they use conservative, word-boundary patterns
+  disposition: NOT-ASSERTABLE
+  assertion:
+    kind: none
+  justification: >
+    "Conservative" is a reviewer judgment with no discriminating machine check:
+    a regex can be syntactically word-boundaried (`\b...\b`) and still match far
+    too broadly, and a pattern with no `\b` can still be narrow. Asserting mere
+    `\b` presence would manufacture a green that does not mean what the clause
+    means. Named here rather than folded into LGR-008's compilation check.
+    Reviewed at authoring/PR time against the authoring skill's guidance.
+  notes: >
+    Real cost already paid on this axis: a captured session (0629f373) had a
+    model treat a wayfinder offer as mandatory off a loose match. The
+    consumer's structural mitigation is the subordination guard prepended to
+    every injected block (__init__.py:72-88), asserted by
+    test_prompt_builders.py::test_every_injected_block_leads_with_the_subordination_guard.
+    Promotion path: if a mechanical conservativeness heuristic is ever agreed,
+    this becomes a probe.
+
+# --------------------------------------------------------------------------- #
+# Core 7 — commands verified at authoring time
+# --------------------------------------------------------------------------- #
+- id: LGR-011
+  title: verified_at (ISO date) and provenance recorded on every packet
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 7"
+    quote: |
+      `verified_at` (ISO date) is required and records that verification;
+      `provenance` records its basis (what was checked, against what source).
+  disposition: CONFORMS
+  assertion:
+    kind: indexed
+    ref:
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_real_packet_conforms_to_core_clauses
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_fixture_fails_exactly_its_targeted_clause
+  notes: >
+    Discriminating fixtures: missing-verified-at.md and bad-verified-at.md
+    (both C7). This row asserts the RECORD of verification; the verification
+    itself is LGR-012.
+
+- id: LGR-012
+  title: every try_now entry is runnable as written at authoring time
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 7"
+    quote: |
+      Every `try_now` entry is runnable as written when the packet is authored
+      or revised.
+  disposition: NOT-ASSERTABLE
+  assertion:
+    kind: none
+  justification: >
+    Proving a command is runnable requires EXECUTING it against live host and
+    CLI state (installed tooling, network, provider config) — outside a
+    contributor-runnable kit the contract itself scopes as "Plain pytest: no
+    DTU, no network, no model". Verification happens out-of-band at authoring
+    time; its recorded evidence is the `verified_at`/`provenance` pair asserted
+    by LGR-011, which is the strongest in-process proxy available and is
+    deliberately not presented as proof of runnability.
+  notes: >
+    Drift risk this row names honestly: `verified_at` can go stale silently —
+    a command verified on 2026-08-19 may no longer be runnable today, and no
+    check here would notice. Real precedent: a stale "role wins, pin is
+    fallback" claim in the pinning bulletin was caught only by re-verifying
+    against docs at authoring time. Candidate mitigation for a later wave: a
+    staleness tripwire on `verified_at` age (a freshness heuristic, not a
+    runnability proof) — deliberately NOT asserted here, because a green age
+    check would read as a green runnability check.
+
+# --------------------------------------------------------------------------- #
+# Core 8 — forward compatibility
+# --------------------------------------------------------------------------- #
+- id: LGR-013
+  title: unknown frontmatter keys are ignored, never fatal
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 8"
+    quote: |
+      Forward compatibility: a packet carrying keys this contract does not
+      define still parses and serves.
+  disposition: CONFORMS
+  assertion:
+    kind: indexed
+    ref:
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_unknown_keys_fixture_is_fully_conformant_and_parses
+      - modules/hooks-wayfinder/tests/test_packet_contract.py::test_fixture_fails_exactly_its_targeted_clause
+  notes: >
+    C8 is the one Core clause with a POSITIVE rather than negative fixture
+    (unknown-keys-ok.md): by construction no unknown key can make a conformant
+    packet fail, so there is nothing to discriminate against. The fixture
+    proves both halves — it carries `totally_unknown_key`, still constructs a
+    CatalogItem, and reports zero clause violations.
+
+# --------------------------------------------------------------------------- #
+# Conformance section — maintainer-side behavioral check
+# --------------------------------------------------------------------------- #
+- id: LGR-014
+  title: maintainer-side DTU live-render pass (worked example)
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Conformance"
+    quote: |
+      a DTU live-render pass — menu listing, signal match with the consent
+      boundary held, deep-dive via `action`, rotation eligibility — retained as
+      a checkable artifact.
+  disposition: NOT-ASSERTABLE
+  assertion:
+    kind: none
+  justification: >
+    The contract itself rules this check NOT-ASSERTABLE in-process,
+    justification: out-of-band DTU procedure. It requires a live Digital Twin
+    Universe instance running a real session against a real provider — no
+    in-process, no-network, no-model check can stand in for it. Ratified as
+    NOT-ASSERTABLE by converge:protocol-authority, 2026-09-03.
+  notes: >
+    Current worked example / retained artifact: the smart-tools bulletin render
+    pass of 2026-09-02, evidence recorded on wayfinder PR #9. Out-of-band
+    procedure to refresh it: launch a DTU with the bundle installed, then
+    exercise (a) menu listing, (b) a signal match with the consent boundary
+    held, (c) deep-dive via the packet's own `action`, (d) rotation
+    eligibility. Reviewed at cadence — never silently trusted; a stale worked
+    example is a real finding, not a green.
+
+# --------------------------------------------------------------------------- #
+# Open questions pinned against current behavior
+# --------------------------------------------------------------------------- #
+- id: LGR-015
+  title: packet filename stem need not equal its id (undecided; pinned)
+  contract:
+    file: contracts/packet.v1.md
+    clause: "Core 2"
+    quote: |
+      `id` is the packet's stable identity across every mechanism that
+      references it: decline-memory, rotation seen-memory, menu keying, signal
+      hint dedup.
+  disposition: OPEN-PINNED
+  assertion:
+    kind: probe
+    ref: test_row_lgr_015
+  justification: >
+    Undecided call, deliberately not forged into a clause. The contract makes
+    `id` the identity and says nothing about the FILENAME; C1 only requires the
+    packet be a single file under a registered source. One live packet
+    exercises that latitude: content/bulletins/current.md carries
+    `id: switch-models` — a leftover of the Ring-0 "one current bulletin"
+    shape, now that the hook rotates multiple promoted bulletins and
+    `current.md` is no longer singular in meaning. Note the authoring skill's
+    own worked example uses `id: switch-models` (SKILL.md:97) while shipping
+    inside `current.md`. Renaming is plausible but is a decision (it changes a
+    public `action` mention path), so the current state is PINNED rather than
+    silently "fixed" or silently spread.
+  notes: >
+    The probe pins the exact divergence SET, so drift flips it in BOTH
+    directions: renaming current.md → switch-models.md flips it (the decision
+    got made — record it), and introducing a SECOND filename≠id packet also
+    flips it (the latitude spread — decide before it becomes the norm). Two
+    legal exits on a flip: revert, or in the same change update this row (and
+    the contract, if the call is to require agreement). Doing neither means
+    main carries a ledger that lies. That is drift.

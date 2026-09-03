@@ -107,7 +107,7 @@ The hook fires only the **coarse ephemeral nudge**. The agent still runs propose
 > 1. **Bulletin lifecycle is rotation, not "supersede + archive."** The shipped hook rglobs all of `content/`, and rotates the session lead across every `promoted: true` item (seen-memory in `surfaced.jsonl`). Multiple bulletins coexist and rotate; `archive/` is unused so far.
 > 2. **The hook never reads `supersedes`.** It DOES read `promoted` and `curated`, which the field list above omits.
 > 3. **`pro-tips/` does not exist yet** — no directory, no category handling.
-> The authoritative field reference is `skills/wayfinder-pack/SKILL.md` (and, if ratified, a per-seam packet contract). This document is design history, not the contract.
+> The authoritative reference is `contracts/packet.v1.md` (FROZEN, ratified 2026-09-03); `skills/wayfinder-pack/SKILL.md` is the procedure that teaches it. This document is design history, not the contract.
 
 **The mining recipe** (staged, reproduces `goal-workflow-evolution.md` mechanically):
 ```yaml
