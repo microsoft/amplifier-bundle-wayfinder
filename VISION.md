@@ -86,3 +86,4 @@ features ship, and when a ring widens, are tracker matters, not vision.
   ratification: ring feature-assignments demoted to status docs, duplicated
   consent mechanics thinned to pointers (channel guidance + packet contract),
   resists section given its canonical heading. Substance unchanged.
+- 2026-09-03 — **ratified by the owner** (first ratification, as amended above).

@@ -1,6 +1,6 @@
 # Contract: wayfinder packet format — v1
 
-**Status: DRAFT** — awaiting owner ratification (FROZEN stamp).
+**Status: FROZEN** — ratified by the owner (bkrabach), 2026-09-03.
 **Seam:** packet authors (many, external) × the catalog consumer (`modules/hooks-wayfinder`).
 **Procedure that teaches this contract:** `skills/wayfinder-pack/SKILL.md` (authoring
 guidance; this document is authoritative on the format itself).
@@ -99,5 +99,10 @@ produce packets; one hook consumes them. The consumer's failure mode is silence
   behavior and the `wayfinder-pack` authoring skill after three independent
   producers had authored against the de facto format. Evidence for the seam:
   externally authored packets (loop-until-proven; smart-tools via PR #9) and one
-  observed doc-vs-code drift caught by an external author. Awaiting owner
-  ratification.
+  observed doc-vs-code drift caught by an external author.
+- **2026-09-03 — v1 FROZEN.** Ratified by the owner. Freeze Bar at stamp: spec
+  written; machine-checkable kit green (45/45, per-clause discriminating
+  fixtures); real implementation passing (the consumer hook + all 12 live
+  packets — the kit caught and we fixed one real violation before the stamp);
+  worked example end-to-end = the smart-tools DTU render pass (PR #9,
+  2026-09-02).
