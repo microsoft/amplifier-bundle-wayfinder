@@ -261,6 +261,16 @@ class WayfinderConfig:
     # orienting first prompt.
     menu_enabled: bool = True
     menu_patterns: tuple[str, ...] = _DEFAULT_MENU_PATTERNS
+    # Adoption-aware ranking. When true (default), the two explicit-engagement
+    # blocks (the orienting index and the F3 re-summonable menu) instruct the
+    # agent to load the wayfinder-scout skill, which ranks these offers
+    # against the reader's OWN usage evidence before rendering -- so the
+    # rotation never leads with something the reader already does daily. The
+    # hook itself stays deterministic: it only carries the instruction text
+    # and any `builds_on` ladder metadata; ranking judgment lives in the
+    # skill/model. When false, both blocks render exactly as before (no scout
+    # mention, unconditional "SURFACE NOW" lead).
+    adoption_aware: bool = True
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any] | None) -> WayfinderConfig:
@@ -308,6 +318,7 @@ class WayfinderConfig:
             menu_patterns=_coerce_patterns(
                 raw.get("menu_patterns"), _DEFAULT_MENU_PATTERNS
             ),
+            adoption_aware=bool(raw.get("adoption_aware", True)),
         )
 
 
@@ -326,6 +337,12 @@ class CatalogItem:
     prompt_patterns: list[re.Pattern[str]] = field(default_factory=list)
     curated: bool = False
     promoted: bool = False
+    # Adoption ladder: ids of offers this one subsumes (mastering this rung
+    # implies mastering everything it builds on). From frontmatter `builds_on`
+    # (a list, or a single scalar coerced to one). Purely carried metadata --
+    # ranking judgment against usage evidence lives in the wayfinder-scout
+    # skill, never here.
+    builds_on: list[str] = field(default_factory=list)
     source_path: str = ""
     # Provenance: the source key this item came from ("default" = own content,
     # else the content_sources map key). Captured now; no consumer yet.
@@ -415,6 +432,7 @@ def _item_from_meta(
         prompt_patterns=_compile_patterns(_as_str_list(signals.get("prompt_matches"))),
         curated=bool(meta.get("curated", False)),
         promoted=bool(meta.get("promoted", False)),
+        builds_on=_as_str_list(meta.get("builds_on")),
         source_path=source_path,
         source=source,
     )
@@ -549,7 +567,30 @@ def _select_promoted_lead(
 # --------------------------------------------------------------------------- #
 # Injection text builders (packet shape; point-don't-absorb)
 # --------------------------------------------------------------------------- #
-def _build_index_block(catalog: SessionCatalog) -> str:
+# Adoption-aware ranking instruction (config knob: adoption_aware). Shared
+# verbatim by _build_index_block and WayfinderHooks._build_menu_block -- both
+# explicit-engagement blocks (the orienting index and the F3 re-summonable
+# menu) point the agent at the same skill, so its wording must never drift
+# between the two call sites.
+_SCOUT_INSTRUCTION = (
+    "Before rendering: if a skill named 'wayfinder-scout' is available "
+    "(load_skill), load and follow it \u2014 it ranks these offers against the "
+    "reader's OWN usage evidence (local artifacts and runtime markers). Never "
+    "lead with an offer the reader already uses daily, and never lead with a "
+    "rung below one they've mastered (see any 'builds on:' annotations). If "
+    "the skill is unavailable or its probes fail, render the list as-is below "
+    "\u2014 the rotation order is the designed fallback."
+)
+
+
+def _builds_on_suffix(item: CatalogItem) -> str:
+    """The ' (builds on: a, b)' suffix, or '' when there's no ladder metadata."""
+    if not item.builds_on:
+        return ""
+    return f" (builds on: {', '.join(item.builds_on)})"
+
+
+def _build_index_block(catalog: SessionCatalog, adoption_aware: bool = True) -> str:
     live = [it for it in catalog.items.values() if it.id not in catalog.declined_ids]
     if not live:
         return ""
@@ -573,12 +614,14 @@ def _build_index_block(catalog: SessionCatalog) -> str:
             "Never glob/grep/search for the file. This menu is authoritative about "
             "what EXISTS: if an item is listed, it exists — follow its action."
         ),
-        "",
-        "Offers on the menu:",
     ]
+    if adoption_aware:
+        lines.append(_SCOUT_INSTRUCTION)
+    lines.append("")
+    lines.append("Offers on the menu:")
     for it in live:
         cat = f" [{it.category}]" if it.category else ""
-        lines.append(f"- {it.id}{cat}: {it.headline}")
+        lines.append(f"- {it.id}{cat}: {it.headline}{_builds_on_suffix(it)}")
         if it.action:
             lines.append(f"    body: {it.action}")
 
@@ -590,11 +633,18 @@ def _build_index_block(catalog: SessionCatalog) -> str:
         start = [it for it in catalog.start_items if it.id not in catalog.declined_ids]
     if start:
         lines.append("")
-        lines.append(
-            "SURFACE NOW — this session's lead (once, commands-first, lead with a "
-            "2–3 line summary; read the file on demand for the rest, never paste "
-            "the whole thing):"
-        )
+        if adoption_aware:
+            lines.append(
+                "DEFAULT LEAD \u2014 surface this (once, commands-first, 2\u20133 line "
+                "summary; read the file on demand) UNLESS the wayfinder-scout "
+                "ranking demotes it:"
+            )
+        else:
+            lines.append(
+                "SURFACE NOW — this session's lead (once, commands-first, lead with a "
+                "2–3 line summary; read the file on demand for the rest, never paste "
+                "the whole thing):"
+            )
         for it in start:
             lines.append(f"  {it.id} — {it.headline}")
             if it.try_now:
@@ -931,7 +981,9 @@ class WayfinderHooks:
             ]
             seen = read_surfaced(self._resolve_surfaced_path())
             catalog.promoted_lead = _select_promoted_lead(pool, seen)
-        catalog.index_text = _build_index_block(catalog)
+        catalog.index_text = _build_index_block(
+            catalog, adoption_aware=self.config.adoption_aware
+        )
         self._catalogs[session_id] = catalog
         return catalog
 
@@ -1356,12 +1408,14 @@ class WayfinderHooks:
                 "(including its @namespace prefix); never glob/grep/search for "
                 "the file. This menu is authoritative about what EXISTS."
             ),
-            "",
-            "Offers on the menu:",
         ]
+        if self.config.adoption_aware:
+            lines.append(_SCOUT_INSTRUCTION)
+        lines.append("")
+        lines.append("Offers on the menu:")
         for it in live:
             cat = f" [{it.category}]" if it.category else ""
-            lines.append(f"- {it.id}{cat}: {it.headline}")
+            lines.append(f"- {it.id}{cat}: {it.headline}{_builds_on_suffix(it)}")
             if it.action:
                 lines.append(f"    body: {it.action}")
         # Honest "you've seen it all" note: only when EVERY promoted highlight
@@ -1426,5 +1480,6 @@ async def mount(
             "task_patterns": list(wf_config.task_patterns),
             "menu_enabled": wf_config.menu_enabled,
             "menu_patterns": list(wf_config.menu_patterns),
+            "adoption_aware": wf_config.adoption_aware,
         },
     }

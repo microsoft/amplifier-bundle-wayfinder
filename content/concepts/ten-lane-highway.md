@@ -1,6 +1,7 @@
 ---
 id: ten-lane-highway
 category: concept
+builds_on: [goal-batch]
 headline: "Keep ~10 autonomous /goal lanes full at all times — the steady-state parallel practice."
 try_now:
   - 'load_skill("goal-batch")'

@@ -2,6 +2,7 @@
 id: goal-batch
 category: practice
 promoted: true
+builds_on: [goal]
 headline: "Run 2+ independent tasks as parallel autonomous lanes — each its own worktree/branch/tmux /goal session, verified and merged for you."
 try_now:
   - 'run all this through goal-batch'

@@ -48,3 +48,5 @@ hooks:
       # Restrict to top-level (human) sessions. Sub-agents / recipe steps /
       # fork skills get ZERO wayfinder surfacing. Default true.
       root_only: true
+      # explicit-engagement menus load wayfinder-scout to rank offers against the reader's own usage evidence
+      adoption_aware: true
