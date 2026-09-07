@@ -91,6 +91,14 @@ it was meant to, rather than an exit code.
 
 ## 2. Fidelity re-verified at today's head — **one real weakening found and restored**
 
+> **Reproducer note.** `fidelity_check.py` shipped here originally hard-defaulted to
+> `origin/main`, which **does not exist as a remote-tracking ref in the
+> `--single-branch` clone a reviewer gets from `gh pr checkout`** — it died in a raw
+> subprocess traceback. Caught by running it inside a fresh clone of this PR's own
+> committed tree (see §7). Fixed: it now tries `origin/main` → `main` →
+> `origin/HEAD`, fails loud with the exact `git fetch` command if none resolve, and
+> exits non-zero on any missing token or uncovered sentence instead of only printing.
+
 Re-derived here, **not inherited** from zc6t's table. Two mechanical passes over
 stock-vs-lean:
 
@@ -294,6 +302,30 @@ in the goal that a refused claim is expected and is not branch C.
    be enforced automatically rather than by a test nobody is required to run.
 4. **No measurement was re-bought.** The -13.57% $/task figure remains `g7h3`'s at
    $428.10; this lane makes no new cost claim.
+
+## 7. Deliverables verified in the PR's own committed tree — not in the working copy
+
+Local success is not evidence about what a reviewer receives. Every claim above was
+re-checked against a **fresh `git clone` of the PR branch**, confirmed to be at the
+exact head the remote reports (`9fc4995`, later `%%HEAD%%` after the reproducer fix):
+
+| Check | Result |
+|---|---|
+| Fresh clone HEAD == remote head_sha | match |
+| **39 content assertions** across all five deliverables | all pass |
+| Pin test run **inside the clone** | 152 passed |
+| Fidelity reproducer run **inside the clone** | **initially CRASHED** — defect found and fixed, now clean |
+| PR file list read from GitHub API (independent of git) | 8 files, `isDraft: true`, `headRefOid` matches |
+
+The content assertions verify presence *by substance*, not by filename: the fidelity
+section's two named passes and its quoted dropped constraint; every figure in the
+char-count table (2,048 / 1,645 / 1,974 / 1,587 / 4,022 / 3,232 / −790 / −19.64%) and
+the stated `len(str)`-not-`wc -c` method; the pin test's four guard families and the
+restored bar among them; and the CI statement naming the dependabot workflow and
+disclaiming a green run.
+
+**This check earned its keep.** It found a real defect no file-existence check would
+have — the fidelity reproducer was unrunnable for a reviewer.
 
 ---
 

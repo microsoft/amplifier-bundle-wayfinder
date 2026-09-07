@@ -8,19 +8,56 @@ Two mechanical passes over stock-vs-lean for the two always-on context files:
    words present somewhere in lean. This is the pass that caught the real
    weakening zc6t's token-only checker reported as clean.
 
-Run (BASE defaults to the pre-patch commit on origin/main):
+Run from the repo root:
 
     python3 docs/lanes/smy5-patch-wayfinder/fidelity_check.py [BASE_REF]
 
+BASE_REF defaults to the pre-patch base branch. With no argument the script
+tries origin/main, then main, then origin/HEAD, and uses the first that
+resolves -- so it works both in a full clone and in the `--single-branch`
+clone a reviewer gets from `gh pr checkout`, where `origin/main` does NOT
+exist as a remote-tracking ref even after `git fetch origin main`.
+
+If no base ref resolves it FAILS LOUD with the exact fetch command to run,
+rather than dying in a subprocess traceback.
+
 Expected output: MISSING IN LEAN: NONE, and 0 uncovered sentences, both files.
+Exit 0 on clean, 1 on any missing token or uncovered sentence.
 """
 
 import re, subprocess, sys, pathlib
 
-BASE = sys.argv[1] if len(sys.argv) > 1 else "origin/main"
+PATHS = ["context/wayfinder-voice.md", "context/propose-and-ack.md"]
+
+
+def _resolves(ref):
+    return subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+                          capture_output=True, text=True).returncode == 0
+
+
+def resolve_base(argv):
+    candidates = [argv[1]] if len(argv) > 1 else ["origin/main", "main", "origin/HEAD"]
+    for ref in candidates:
+        if _resolves(ref):
+            return ref
+    sys.exit(
+        "FATAL: no base ref resolved (tried: %s).\n"
+        "This is normal in a --single-branch clone. Fetch the base branch first:\n"
+        "    git fetch origin main:refs/remotes/origin/main\n"
+        "then re-run, or pass an explicit ref:\n"
+        "    python3 %s <BASE_REF>" % (", ".join(candidates), argv[0])
+    )
+
+
+BASE = resolve_base(sys.argv)
+
 
 def stock(path):
-    return subprocess.run(["git","show",f"{BASE}:{path}"],capture_output=True,text=True,check=True).stdout
+    r = subprocess.run(["git", "show", f"{BASE}:{path}"], capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit(f"FATAL: {path} does not exist at base ref {BASE!r}.\n{r.stderr.strip()}")
+    return r.stdout
+
 
 TOKEN_RE = re.compile(r'`([^`]+)`')
 # sentence-level split
@@ -35,7 +72,9 @@ per via any all each""".split())
 def content_words(s):
     return {w for w in re.findall(r"[a-z][a-z0-9_\-']+", s.lower()) if w not in STOP and len(w)>2}
 
-for path in ["context/wayfinder-voice.md","context/propose-and-ack.md"]:
+exit_code = 0
+print(f"base ref: {BASE}")
+for path in PATHS:
     s = stock(path)
     l = pathlib.Path(path).read_text()
     print("="*70)
@@ -57,3 +96,7 @@ for path in ["context/wayfinder-voice.md","context/propose-and-ack.md"]:
     for c,sent,missing in weak:
         print(f"    cov={c}  {sent}")
         print(f"      unmatched words: {missing}")
+    if miss_tok or weak:
+        exit_code = 1
+
+sys.exit(exit_code)
