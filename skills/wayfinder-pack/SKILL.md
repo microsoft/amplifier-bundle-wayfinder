@@ -10,6 +10,10 @@ description: >
   the authored-voice rules, install-awareness, and how to verify a packet in a
   DTU before shipping.
 user-invocable: true
+# Hand-run authoring skill: invoked deliberately (`/wayfinder-pack`, or
+# `load_skill(skill_name="wayfinder-pack")`), never auto-selected by the model.
+# Keeps it out of the auto-invocable index every session pays for.
+disable-model-invocation: true
 allowed-tools:
   - read_file
   - write_file
