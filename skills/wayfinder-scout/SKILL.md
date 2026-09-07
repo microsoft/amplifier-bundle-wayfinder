@@ -9,6 +9,12 @@ description: >
   this user has already adopted ("wayfinder-scout", "what have I already
   adopted?", "rank the wayfinder menu for me").
 user-invocable: true
+# Invoked deliberately, never auto-selected: the wayfinder channel names this
+# skill in its own explicit-engagement instruction (hooks-wayfinder's
+# _SCOUT_INSTRUCTION), and a reader can run it directly. Hidden skills still
+# render by name under "User-invoked skills" in the skills index, so that
+# availability check still resolves.
+disable-model-invocation: true
 allowed-tools:
   - read_file
   - glob

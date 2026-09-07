@@ -29,6 +29,20 @@ loosen it. This governs everything under `content/` and `context/`.
 | `modules/hooks-wayfinder/` | The hook: session:start surfacing, frontmatter-derived catalog, decline-filter, prompt signals | Session lifetime |
 | `behaviors/wayfinder.yaml` | Wires context + hook + the authoring skill | Composition |
 | `skills/wayfinder-pack/` | The authoring skill — how to write a good packet | On demand (`/wayfinder-pack`) |
+| `skills/wayfinder-scout/` | Ranks the offer catalog against the reader's own usage evidence | On demand — named by the channel's own instruction, or `/wayfinder-scout` |
+
+## Skills here are hand-run
+
+Both skills carry `disable-model-invocation: true`: they are invoked
+deliberately (a slash command, or the channel naming `wayfinder-scout` in its
+own injected instruction), never auto-selected by a model. A new skill must
+make the same decision explicitly — `modules/hooks-wayfinder/tests/test_skill_visibility.py`
+fails on any skill directory it doesn't know about.
+
+Hiding a skill does **not** make it unreachable: a hidden skill still renders by
+name under "User-invoked skills" in the skills index, which is exactly why the
+scout's availability check still resolves. Keep `user-invocable: true` alongside
+it — the two keys are a pair.
 
 ## Authoring or editing a packet
 
