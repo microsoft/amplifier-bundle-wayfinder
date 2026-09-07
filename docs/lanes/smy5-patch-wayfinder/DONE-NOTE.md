@@ -11,18 +11,42 @@ already-measured patches plus a local pytest run — nothing here buys a measure
 
 ## Outcome
 
-**Terminal outcome: branch C (BLOCKED)** — see `BLOCKED.md` beside this file.
-Chosen once, and it is the goal's own enumerated branch for "a refused claim."
+**Terminal outcome: branch A (RESOLVED).**
 
-All five repo-side deliverables are **DONE** and shipped as draft PR #11. The single
-unreachable element is the item's **resolution**, which requires custody this session
-was never able to obtain. OUTCOME A requires the item resolved **AND** the
-deliverables shipped; the second half holds, the first does not, so the outcome as
-defined is not reached and branch C is correct.
+Both halves of A now hold:
 
-An earlier draft of this note recorded that element as "NOT-POSSIBLE" without naming
-a terminal branch. That was a fourth outcome branch, which the goal forbids. Corrected
-here — one move, no measurement changed, no further re-decision.
+1. **`model_performance-smy5` is resolved** with a user-readable summary —
+   `status: resolved`, `closed_at: 2026-09-07T17:17:57Z`. It was resolved by the
+   sibling app-cli lane (`agent-spark-1-3875147`), not by this session; the goal's
+   branch A requires the item *to be* resolved, not to be resolved by this lane.
+2. **This lane's deliverables exist as a draft PR on the module's origin** — PR
+   [#11](https://github.com/microsoft/amplifier-bundle-wayfinder/pull/11), head
+   `50482cc`. All five repo-side deliverables DONE.
+
+**Terminal-state history — two moves, each on changed grounds, neither churn.**
+
+| # | State | Why it changed |
+|---|---|---|
+| 0 | *(invented fourth branch)* — "NOT-POSSIBLE", no terminal branch named | Defect on this lane's part; the goal forbids a fourth branch. |
+| 1 | **C (BLOCKED)** | Correction. `work_claim` refused (item held live by a sibling), so A was genuinely unreachable at that moment. C is the goal's own enumerated branch for "a refused claim." |
+| 2 | **A (RESOLVED)** | **The evidence changed.** At 17:17:57Z the sibling resolved the item. `status` went `held` → `resolved` and `closed_at` was set — so A's first half became true and there is no longer any blocked state to record. |
+
+The goal's anti-churn rule is *"If no number changed, no re-decision is warranted"*
+(lane 1ru moved BLOCKED → REJECT → BLOCKED with its measurement never changing).
+Move 2 is the opposite case: a value this lane does not control changed, and the
+re-decision follows the change rather than a re-reading of the same text. `BLOCKED.md`
+was removed rather than left standing superseded, because the mere presence of that
+file is a blocked claim and this lane is not blocked.
+
+**The goal defect found along the way is still real and still filed.** It did not
+cause this lane's outcome in the end, but it would have, and it will for the next
+lane — see the appendix below and `model_performance-pvp6`.
+
+**Recorded against the item.** Because the stored resolution names only the app-cli
+slice while the item spans 13 repos, this lane appended a **`work_erratum`**
+(append-only; never rewrites the resolution, needs no custody) naming the wayfinder
+slice, PR #11, the char counts, and the second real weakening. `corrected: true` now
+travels with the item everywhere its resolution is shown.
 
 ## Headline
 
@@ -270,3 +294,68 @@ in the goal that a refused claim is expected and is not branch C.
    be enforced automatically rather than by a test nobody is required to run.
 4. **No measurement was re-bought.** The -13.57% $/task figure remains `g7h3`'s at
    $428.10; this lane makes no new cost claim.
+
+---
+
+## Appendix — the goal defect this lane hit (still open, `model_performance-pvp6`)
+
+Preserved because it did not stop mattering when the sibling resolved the item. Full
+text is in git history at `docs/lanes/smy5-patch-wayfinder/BLOCKED.md` (removed at
+`50482cc`'s successor once the outcome became A).
+
+### Face 1 — fan-out
+
+`model_performance-smy5` is **one** item spanning 13 repos, and this batch launched
+**four** concurrent lanes at it (`smy5-patch-app-cli`, `smy5-patch-routing-matrix`,
+`smy5-patch-skills`, `smy5-patch-wayfinder`). Beads permits one holder per item, so
+at most one of the four could ever claim it, by construction:
+
+```
+work_claim(project="model_performance", item_id="model_performance-smy5")
+-> claim ... failed: issue already claimed by agent-spark-1-3875147
+```
+
+The goal's KNOWN section says "Sibling lanes are applying the same patch set to other
+repos right now" while Procedure 1 says a refused claim means write `BLOCKED.md` and
+stop. Followed literally that strands 3 of 4 repos unpatched over a bookkeeping
+collision, at $0 of real obstruction.
+
+### Face 2 — branch C contradicts its own procedure
+
+Sharper, and **not fixed by fixing face 1**:
+
+- C **enumerates** its causes: "a missing prerequisite, **a refused claim**, a broken
+  dependency, a defect in another component."
+- C **requires** "the item is released via `work_release`"; Procedure 5 adds "Release
+  while you still HOLD the item."
+
+A refused claim means, by definition, the lane **never held** the item. `work_release`
+requires holding it. So for that cause the release leg is **unexecutable by
+construction — every lane, every time.** Attempted here rather than assumed:
+
+```
+work_release(id="model_performance-smy5")
+-> not currently holding 'model_performance-smy5' in this session --
+   refusing to release an item this session did not claim
+```
+
+Nothing was mutated; the item was never touched by this lane — no claim, no release,
+no state change. The "Release while you still HOLD the item" clause is the tell: it
+guards the `work_block` trap, which only arises if the lane held the item. The
+procedure was written for the other three causes (held-then-blocked) and the
+refused-claim cause was never reconciled against it.
+
+**Consequence:** a lane hitting that cause can satisfy C's *substance* but never C's
+*procedure*, and with a fourth branch forbidden it has **no fully-conformant terminal
+state available**. This lane was rescued only by a sibling happening to resolve the
+item; the next one may not be.
+
+**Fix:** drop the refused-claim cause from C, or make the release leg conditional on
+the lane having held the item.
+
+### Declined: the compliance-theatre path
+
+The release leg could have been made to "succeed" by claiming the item purely in
+order to release it — seizing custody of a live shared item from a working sibling to
+satisfy a step that accomplishes nothing. Declined deliberately, and recorded so the
+choice is visible rather than silent.
