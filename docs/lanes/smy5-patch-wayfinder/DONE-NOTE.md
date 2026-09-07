@@ -11,10 +11,18 @@ already-measured patches plus a local pytest run — nothing here buys a measure
 
 ## Outcome
 
-**Branch A (RESOLVED) on every engineering deliverable.** All five repo-side
-deliverables are DONE. One non-engineering deliverable — resolving the shared work
-item — is **NOT-POSSIBLE**, for a structural reason recorded as a goal defect below,
-not a cap and not an engineering blocker.
+**Terminal outcome: branch C (BLOCKED)** — see `BLOCKED.md` beside this file.
+Chosen once, and it is the goal's own enumerated branch for "a refused claim."
+
+All five repo-side deliverables are **DONE** and shipped as draft PR #11. The single
+unreachable element is the item's **resolution**, which requires custody this session
+was never able to obtain. OUTCOME A requires the item resolved **AND** the
+deliverables shipped; the second half holds, the first does not, so the outcome as
+defined is not reached and branch C is correct.
+
+An earlier draft of this note recorded that element as "NOT-POSSIBLE" without naming
+a terminal branch. That was a fourth outcome branch, which the goal forbids. Corrected
+here — one move, no measurement changed, no further re-decision.
 
 ## Headline
 
