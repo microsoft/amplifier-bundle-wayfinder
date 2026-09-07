@@ -179,15 +179,25 @@ def test_packet_install_and_action_wording_distinguishes_requests_from_offers(
 
 
 def test_decline_semantics_preserve_soft_and_hard_behavior() -> None:
+    """Decline semantics survive the lean-head rewrite of the consent floor.
+
+    ``context/propose-and-ack.md`` was condensed for the always-on head
+    (model_performance-smy5, from zc6t's measured patch set): the soft/hard
+    decline clauses are now mid-sentence, so their leading article and the
+    em-dash parenthetical around "no second ack" changed form. The SUBSTANCE
+    is asserted here verbatim and is unchanged; only the surrounding
+    punctuation moved. See ``test_always_on_head.py`` for the budget pin that
+    keeps the verbose form from coming back.
+    """
     consent = (ROOT / "context/propose-and-ack.md").read_text()
     about = (ROOT / "content/concepts/about-wayfinder.md").read_text()
 
-    assert 'A soft "not now/later" writes nothing and may resurface' in consent
+    assert 'soft "not now/later" writes nothing and may resurface' in consent
     assert (
-        'A hard "not interested / stop offering this / never" itself authorizes'
+        'hard "not interested / stop offering this / never" itself authorizes'
         in consent
     )
-    assert "—no second ack—" in consent
+    assert "no second ack" in consent
     assert '"Not now/later" writes nothing and may resurface' in about
     assert (
         'A hard "not interested/stop/never" is remembered without asking again' in about
