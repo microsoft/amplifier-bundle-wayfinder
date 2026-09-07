@@ -45,9 +45,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `enable-cache:`. It caches keyed on **/uv.lock, and this repo
+      # commits no lockfile anywhere, so setup-uv HARD-FAILS the step with
+      # "No file matched to [**/uv.lock]". Observed: it turned the first
+      # red-proof run into a setup error before ruff or pytest ever ran --
+      # a red that proves nothing. These jobs install four small wheels;
+      # the cache was never worth a failure mode.
       - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
 
       - name: Lint (ruff, pinned)
         run: uvx ruff@0.16.6 check --isolated --select E4,E7,E9,F .
@@ -92,9 +96,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `enable-cache:`. It caches keyed on **/uv.lock, and this repo
+      # commits no lockfile anywhere, so setup-uv HARD-FAILS the step with
+      # "No file matched to [**/uv.lock]". Observed: it turned the first
+      # red-proof run into a setup error before ruff or pytest ever ran --
+      # a red that proves nothing. These jobs install four small wheels;
+      # the cache was never worth a failure mode.
       - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
 
       - name: Run the standing test command (AGENTS.md)
         env:
