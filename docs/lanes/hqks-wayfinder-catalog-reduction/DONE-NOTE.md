@@ -157,8 +157,13 @@ Filed as a discovered item against the skills bundle (see §6).
 
 ## 6. Discovered / follow-ups
 
-- **Filed:** the §4 defect — hiding a skill increases the always-on skills index
-  because the user-invoked section sits outside `visibility_token_budget`.
+- **`model_performance-c21w`** — the §4 defect: hiding a skill *increases* the
+  always-on skills index, because the user-invoked section sits outside
+  `visibility_token_budget`. Carries the measurement, the mechanism from the
+  renderer's own code, its limits (n=1 catalog), and two untested candidate fixes.
+- **`model_performance-napw`** — the §5 defect: lane worktrees can launch behind
+  `origin/main`, and a stale base turned a real skill into a published "does not
+  exist". Also covers the unverifiable `16196a1` CI claim.
 - **Not filed, noted:** `bundle.dot` / `bundle.md` list no skills at all, so neither
   was stale before this change and neither is stale after. `foundation:recipes/validate-bundle-repo.yaml`
   was not run (LLM spend, authority $0); this change adds no module, agent or skill
