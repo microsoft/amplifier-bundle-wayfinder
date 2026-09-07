@@ -306,8 +306,9 @@ in the goal that a refused claim is expected and is not branch C.
 ## 7. Deliverables verified in the PR's own committed tree — not in the working copy
 
 Local success is not evidence about what a reviewer receives. Every claim above was
-re-checked against a **fresh `git clone` of the PR branch**, confirmed to be at the
-exact head the remote reports (`9fc4995`, later `%%HEAD%%` after the reproducer fix):
+re-checked against a **fresh `git clone` of the PR branch**, confirmed each time to be at the
+exact head the remote reports — first at `9fc4995`, then again after the reproducer
+fix below:
 
 | Check | Result |
 |---|---|
