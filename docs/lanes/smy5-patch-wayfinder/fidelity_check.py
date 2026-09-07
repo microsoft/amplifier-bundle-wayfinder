@@ -25,7 +25,10 @@ Expected output: MISSING IN LEAN: NONE, and 0 uncovered sentences, both files.
 Exit 0 on clean, 1 on any missing token or uncovered sentence.
 """
 
-import re, subprocess, sys, pathlib
+import pathlib
+import re
+import subprocess
+import sys
 
 PATHS = ["context/wayfinder-voice.md", "context/propose-and-ack.md"]
 
@@ -76,19 +79,21 @@ exit_code = 0
 print(f"base ref: {BASE}")
 for path in PATHS:
     s = stock(path)
-    l = pathlib.Path(path).read_text()
+    lean = pathlib.Path(path).read_text()
     print("="*70)
-    print(f"{path}: stock_chars={len(s)}  lean_chars={len(l)}  delta={len(l)-len(s)}")
+    print(f"{path}: stock_chars={len(s)}  lean_chars={len(lean)}  delta={len(lean)-len(s)}")
     # 1. backticked tokens (commands, paths, identifiers, pointers)
-    st = TOKEN_RE.findall(s); lt = set(TOKEN_RE.findall(l))
+    st = TOKEN_RE.findall(s)
+    lt = set(TOKEN_RE.findall(lean))
     miss_tok = [t for t in dict.fromkeys(st) if t not in lt]
     print(f"  backticked tokens in stock: {len(set(st))}  MISSING IN LEAN: {miss_tok if miss_tok else 'NONE'}")
     # 2. sentence-level coverage: every stock sentence's content words must be >=60% covered somewhere in lean
-    lw = content_words(l)
+    lw = content_words(lean)
     weak=[]
     for sent in sentences(s):
         cw = content_words(sent)
-        if not cw: continue
+        if not cw:
+            continue
         cov = len(cw & lw)/len(cw)
         if cov < 0.6:
             weak.append((round(cov,2), sent[:160], sorted(cw-lw)))
