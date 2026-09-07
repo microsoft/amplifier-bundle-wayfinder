@@ -231,12 +231,22 @@ the goal is explicit that "if you can spend your way to the deliverable and simp
 did not, that is neither B nor C: finish the work." The work is finished; the item's
 resolution belongs to whichever lane holds it.
 
+**Resolving it would also have been substantively wrong**, not merely mechanically
+blocked: `smy5` covers 13 repos and this lane covers 1, so closing it would have
+falsely closed three siblings' pending work.
+
 **For the manager:** resolve `model_performance-smy5` once all four repo PRs are in
-hand. **Recommended goal fix** — for a fan-out over N repos, either file one child
-item per repo (`smy5-wayfinder`, `smy5-skills`, ...) linked to the parent, or state
-in the goal that only the item-holding lane resolves and the others report against
-the parent. Filing that as a discovered item was not possible either: `work_file`
-requires holding an item.
+hand. `work_file` was unavailable (it requires a held item), so the defect was filed
+via `work_add` instead — **`model_performance-pvp6`**, linked `relates-to` `smy5`,
+carrying both recommended fixes: one child item per repo, or an explicit statement
+in the goal that a refused claim is expected and is not branch C.
+
+## Discovered items filed
+
+| Item | What |
+|---|---|
+| **`model_performance-ly85`** | zc6t's fidelity checker is token-only and reported `missing_rules: []` on a file that DID lose a rule. Ships the sentence-coverage pass that catches it. **Urgent — sibling lanes are applying the remaining ~19 patches now.** |
+| **`model_performance-pvp6`** | The fan-out defect below: one item, four concurrent lanes, at most one claimable. Linked `relates-to` `smy5`. |
 
 ## Open after this lane
 
@@ -245,7 +255,9 @@ requires holding an item.
 2. **A second real weakening existed in zc6t's lean set** beyond the known
    `edit_file` one. zc6t's checker was token-only. **The other sibling lanes should
    run a sentence-coverage pass, not just the token pass**, or they will inherit the
-   same false clean.
+   same false clean. Filed as **`model_performance-ly85`**, which points at the
+   reusable `fidelity_check.py` shipped here — this is the time-sensitive one, since
+   the sibling lanes are running now.
 3. **This repo has no CI at all** — worth its own item if the always-on budget is to
    be enforced automatically rather than by a test nobody is required to run.
 4. **No measurement was re-bought.** The -13.57% $/task figure remains `g7h3`'s at
