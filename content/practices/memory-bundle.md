@@ -43,7 +43,7 @@ amplifier-memory init
 **One store, or several.** Every command takes `--home`, so a project or a client can keep its own collection (`amplifier-memory init --home ~/.amplifier-memory-acme`), with its own file and its own timer. A bundle can name the store its sessions use. `enabled: false` takes a store out of your sessions — nothing injected, nothing written, `/remember` and `/memory` not offered; its timer is separate, so remove that too if you want the nightly pass stopped.
 
 **Gotchas.**
-- **Only sessions with a human in them are mined.** Agent lanes, recipes and automation runs still *read* your memories — the work is still yours — but they can't write them and are never mined, so the assistant doesn't quietly learn from itself. Launchers declare this with one environment variable.
+- **Automated sessions are excluded from mining when the selected store has recorded them as automated.** Those labels aren’t shared between stores.
 - **The nightly pass costs money, so pick the model.** A pass is about 30 model calls, not one — `doctor` names the model it used and the last run's call count.
 - **There's a hard cap (200 lines).** Memory can't quietly grow into a context tax — when it's full it says so instead of trimming behind your back.
 - **It's new.** Days old, running on a handful of machines. Every promise it makes has an automated check behind it, but you'd be an early user.
