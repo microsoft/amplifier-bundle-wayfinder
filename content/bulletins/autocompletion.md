@@ -2,16 +2,20 @@
 id: autocompletion
 category: bulletin
 promoted: true
-headline: "Discover Amplifier commands as you type — / and Tab in-app, plus Bash/Zsh/Fish shell completion."
+headline: "Discover Amplifier slash commands and argument choices with / and Tab — plus Bash/Zsh/Fish shell completion."
 try_now:
   - "amplifier --install-completion"
 signals:
   on_event: session:start
   prompt_matches:
-    - '\bamplifier(?:''s)?\s+(?:auto[- ]?complet(?:e|es|ed|ing|ion)|tab[- ]completion)\b'
+    # Noun completion questions exclude nearby code/editor/form generation,
+    # except when a terminal, shell, slash, or command qualifier makes the CLI intent clear.
+    - '\bamplifier(?:[''’]s)?\s+(?:(?:auto[- ]?completion|tab[- ]?completion|command[- ]?completion|slash[- ]?command[- ]?completion|completions?)\b(?:(?=[^.?!]{0,48}\b(?:terminal|shell|slash|commands?)\b)|(?![^.?!]{0,48}\b(?:code(?:\s+editor)?|editor|python|search\s+form)\b))|auto[- ]?complet(?:e|es|ed|ing)\s+(?:slash\s+)?command(?:\s+names?)?\b)'
     - '\bslash(?:[- ]commands?)?\s+(?:completions?|menus?|suggestions?|pop[- ]?ups?)\b[^.?!]{0,40}\b(?:in|for)\s+amplifier\b'
-    - '\b(?:shell|bash|zsh|fish|cli)\s+(?:auto[- ]?complet(?:e|es|ed|ing|ion)|tab[- ]completion)\b[^.?!]{0,40}\b(?:in|for)\s+amplifier\b'
+    - '\b(?:shell|bash|zsh|fish|cli)\s+(?:auto[- ]?complet(?:e|es|ed|ing|ion)|tab[- ]completion|completion)\b[^.?!]{0,40}\b(?:in|for)\s+amplifier\b'
     - '\b(?:command|argument)\s+(?:suggestions?|pop[- ]?ups?)\b[^.?!]{0,40}\b(?:in|for)\s+amplifier\b'
+    - '\bamplifier(?:[''’]s)?\s+(?:slash[- ]?commands?|slash\s+(?:completions?|menus?|suggestions?|pop[- ]?ups?))\b'
+    - '\b(?:argument|option|choice)s?\b[^.?!]{0,40}\bamplifier(?:[''’]s)?\b[^.?!]{0,40}/[a-z][a-z0-9-]*\b'
 trigger: "The user asks about Amplifier autocompletion, finding slash commands or their arguments, completion popups, or shell Tab completion."
 action: 'read_file("@wayfinder:content/bulletins/autocompletion.md")'
 verified_at: 2026-09-10
