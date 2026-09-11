@@ -7,20 +7,21 @@ A curated in-session guide for Amplifier. It does two small, specific things:
 
 wayfinder **points; it never absorbs.** It owns the *communication* about what's new and possible — the capabilities themselves stay where they live (skills load by name, app-CLI questions route to `app-cli:cli-expert`, concepts get a thin note and a pointer to the real source).
 
-## How it's built (Ring 0)
+## How it's built
 
-Zero new Python. wayfinder is authored markdown + behavioral guidance wired onto foundation's existing tools (filesystem, bash, delegate, load_skill). Everything it *does* comes from a tiny always-on channel; everything it *can do* comes from foundation.
+wayfinder is authored markdown + behavioral guidance, with a Python hook (`modules/hooks-wayfinder`) that derives the catalog and coordinates surfacing. Actions use foundation's existing tools (filesystem, bash, delegate, load_skill).
 
-Always-on content (kept deliberately small, ~1.6K tokens total):
+Always-on context (kept deliberately small):
 
 - `context/wayfinder-voice.md` — the one-voice principle
 - `context/propose-and-ack.md` — the propose→show→ack→act protocol + guardrails
-- (the offer catalog is derived by `hooks-wayfinder` from packet frontmatter and injected per-surface — not an always-on file)
-- `content/bulletins/current.md` — the current authored bulletin (Brian edits this)
+
+The offer catalog is derived by `hooks-wayfinder` from packet frontmatter and injected per-surface — not an always-on file.
 
 On-demand (soft-referenced, not always loaded):
 
-- `content/concepts/ten-lane-highway.md` — a thin concept note, read only when offered
+- Packet bodies under `content/bulletins/`, `content/practices/`, and `content/concepts/` — read through each packet's `action`
+- Skill bodies under `skills/` — loaded when invoked
 
 ## The ring model
 

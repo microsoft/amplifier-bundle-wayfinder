@@ -1,71 +1,70 @@
-// Wayfinder is an Amplifier add-on that notices what you're working on and offers relevant tips, tools, and shortcuts — always asking before it acts.
 digraph wayfinder {
     rankdir=LR
     fontname="Helvetica"
     fontsize=12
-    label="Wayfinder v0.1.0\nAn add-on that surfaces helpful tips and shortcuts while you work"
+    label="wayfinder v0.1.0 — bundle repo"
     labelloc=t
     labeljust=c
     nodesep=0.6
     ranksep=0.7
     bgcolor="white"
-    source_hash="67113c69d837dc6c6e8e61ea4911631b4cb0100696ac3a0332414c0d6e0aad34"
+    source_hash="455afc277ddf3cff6eb28e9cb196c69e710b9c306d6bec806b6938d600644da3"
 
     node [fontname="Helvetica", fontsize=11, style="filled,rounded"]
     edge [fontname="Helvetica", fontsize=9]
 
-    root_wayfinder [label="Wayfinder v0.1.0\nThe add-on itself\n0 tools · 0 agents\n~334 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
+    root_wayfinder [label="wayfinder v0.1.0\n0 tools · 0 agents\n~393 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
 
     subgraph cluster_behaviors {
-        label="What It Does"
+        label="Behaviors"
         style="filled"
         fillcolor="#f9f9f9"
         color="#999999"
 
-        beh_wayfinder_behavior [label="Spot the moment, offer the tip\n2 tools · 2 ctx\n~1603 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
+        beh_wayfinder_behavior [label="wayfinder-behavior\n2 tools · 2 ctx\n~1470 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
     }
 
     subgraph cluster_modules {
-        label="Working Parts (code)"
+        label="Modules"
         style="filled"
         fillcolor="#f9f9f9"
         color="#999999"
 
-        mod_hooks_wayfinder [label="Timing watcher\nDecides when a tip is worth showing\n(hooks-wayfinder)", shape=box, fillcolor="#bbdefb", style="filled,rounded"]
+        mod_hooks_wayfinder [label="hooks-wayfinder", shape=box, fillcolor="#bbdefb", style="filled,rounded"]
     }
 
     subgraph cluster_context {
-        label="Written Guidance (read as needed)"
+        label="Context Files"
         style="filled"
         fillcolor="#f9f9f9"
         color="#999999"
 
-        ctx_wayfinder_voice_md [label="How to phrase a tip\nwayfinder-voice.md\n~615 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
-        ctx_propose_and_ack_md [label="Always ask before acting\npropose-and-ack.md\n~399 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_wayfinder_voice_md [label="wayfinder-voice.md\n~411 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
+        ctx_propose_and_ack_md [label="propose-and-ack.md\n~396 tok", shape=box, fillcolor="#e1bee7", style="filled,rounded"]
     }
 
     subgraph cluster_legend {
-        label="Legend — what each color means"
+        label="Legend"
         style="filled"
         fillcolor="white"
         color="#cccccc"
         fontsize=9
 
-        leg_root [label="the add-on itself", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", fontsize=9]
-        leg_behavior [label="what it does", shape=box, fillcolor="#e0f2f1", style="filled,rounded", fontsize=9]
-        leg_agent [label="helper assistant", shape=box, fillcolor="#c8e6c9", style="filled,rounded", fontsize=9]
-        leg_module [label="working part (code)", shape=box, fillcolor="#bbdefb", style="filled,rounded", fontsize=9]
-        leg_provider [label="AI service", shape=box, fillcolor="#e0e0e0", style="filled,rounded", fontsize=9]
-        leg_context [label="written guidance", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
-        leg_standalone [label="works on its own", shape=box, fillcolor="#80cbc4", style="filled,rounded", fontsize=9]
-        leg_experiment [label="experimental", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
-        leg_ext_cost [label="borrowed, adds cost", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2, fontsize=9]
-        leg_ext_muted [label="borrowed, free", shape=box, fillcolor="#f5f5f5", style="dashed", fontsize=9]
+        leg_root [label="root bundle", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", fontsize=9]
+        leg_behavior [label="behavior", shape=box, fillcolor="#e0f2f1", style="filled,rounded", fontsize=9]
+        leg_agent [label="agent", shape=box, fillcolor="#c8e6c9", style="filled,rounded", fontsize=9]
+        leg_module [label="module", shape=box, fillcolor="#bbdefb", style="filled,rounded", fontsize=9]
+        leg_provider [label="provider", shape=box, fillcolor="#e0e0e0", style="filled,rounded", fontsize=9]
+        leg_context [label="context", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
+        leg_standalone [label="standalone", shape=box, fillcolor="#80cbc4", style="filled,rounded", fontsize=9]
+        leg_experiment [label="experiment", shape=box, fillcolor="#e1bee7", style="filled,rounded", fontsize=9]
+        leg_ext_cost [label="ext+cost", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2, fontsize=9]
+        leg_ext_muted [label="ext+no-cost", shape=box, fillcolor="#f5f5f5", style="dashed", fontsize=9]
     }
 
-    disclaimer [label="\"tok\" = tokens, the units of text the AI reads (~4 characters each)\nSolid border = part of this repo (cost counted here)\nDashed + red = borrowed from elsewhere, adds hidden cost\nDashed + muted = borrowed from elsewhere, no cost\nNot counted: work done in side sessions, anything decided at runtime", shape=note, fillcolor="#eceff1", style="filled", fontsize=9]
+    disclaimer [label="Token estimates: ~4 chars/token\nSolid border = local (counted)\nDashed + red = external, hidden cost (not counted)\nDashed + muted = external, no cost\nExcludes: sub-session costs, runtime-dynamic", shape=note, fillcolor="#eceff1", style="filled", fontsize=9]
 
-    ext_githttps___github_com_microsoft_amplifier_foundation_main [label="Amplifier Foundation\nShared building blocks\n(borrowed, adds cost)", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2]
+    ext_githttps___github_com_microsoft_amplifier_foundation_main [label="amplifier-foundation\n(external, cost)", shape=box, fillcolor="#80cbc4", style="dashed", color="red", penwidth=2]
 
     root_wayfinder -> ext_githttps___github_com_microsoft_amplifier_foundation_main [style=dashed]
     root_wayfinder -> beh_wayfinder_behavior [label="composes"]
